@@ -4,10 +4,8 @@
 
 
 #include<unordered_map>
-#include<iostream>
 #include<string>
 #include<list>
-#include<assert.h>
 
 class JSONObject
 {
@@ -60,32 +58,30 @@ public:
 
     // methods that return whether key - X pair exists
     // X = value
-    bool is_in_values(const std::string& key);
+    bool is_in_values(const std::string& key) const;
 
     // X = object
-    bool is_in_objects(const std::string& key);
+    bool is_in_objects(const std::string& key) const;
 
     // X = list of values
-    bool is_in_arrays(const std::string& key);
+    bool is_in_arrays(const std::string& key) const;
 
     // X = list of objects
-    bool is_in_object_arrays(const std::string& key);
+    bool is_in_object_arrays(const std::string& key) const;
 
-    // присваивание/копирование
-    void operator =(const JSONObject& other);
-
-    // вставить
-    // в значения
+    // paste into
+    // values
     void insert_value(const std::string& key, std::string value);
 
-    // в объекты
+    // objects
     void insert_object(const std::string& key, JSONObject& obj);
 
-    // в массивы объектов
+    // assistant methods of inserting strings into JSON
+    // arrays of objects
     void insert_object_array(const std::string& key, const std::string& array);
 
-    // в массивы значений
-    void insert_array(const std::string& key, const std::string& array);
+    // arrays of values
+    std::list<std::string> create_array(const std::string& array) const;
 };
 
 

@@ -47,7 +47,7 @@ JSONObject::JSONObject(std::string text)
         {
             size_t end_pos = find_block_end_1(text, (int)check_pos);
             JSONObject tmp(text.substr(check_pos, end_pos - check_pos + 1));
-            name_to_object.emplace(std::make_pair(key, tmp));
+            name_to_object[key] = tmp;
             pos1 = end_pos + 1;
         }
         else if (text[check_pos] == '[') // if it is a beginning of an array
@@ -55,7 +55,7 @@ JSONObject::JSONObject(std::string text)
             size_t end_pos = find_block_end_2(text, (int)check_pos);
             std::string array = text.substr(check_pos, end_pos - check_pos + 1);
             if(array.find_first_of("{}", 0) == -1)
-                insert_array(key, array);
+                this->name_to_values[key] = create_array(array);
             else
                 insert_object_array(key, array);
 
@@ -134,7 +134,7 @@ const std::unordered_map<std::string, std::string>& JSONObject::get_name_to_valu
     return name_to_value;
 }
 
-bool JSONObject::is_in_values(const std::string& key) // если такой ключ хранится в простых значениях, возвращает true, иначе - false
+bool JSONObject::is_in_values(const std::string& key) const // если такой ключ хранится в простых значениях, возвращает true, иначе - false
 {
     if (name_to_value.find(key) == name_to_value.end())
         return false;
@@ -142,7 +142,7 @@ bool JSONObject::is_in_values(const std::string& key) // если такой к�
     return true;
 }
 
-bool JSONObject::is_in_objects(const std::string& key) // если такой ключ хранится в простых JSON-объектах, возвращает true, иначе - false
+bool JSONObject::is_in_objects(const std::string& key) const // если такой ключ хранится в простых JSON-объектах, возвращает true, иначе - false
 {
     if (name_to_object.find(key) == name_to_object.end())
         return false;
@@ -150,7 +150,7 @@ bool JSONObject::is_in_objects(const std::string& key) // если такой к
     return true;
 }
 
-bool JSONObject::is_in_arrays(const std::string& key) // если такой ключ хранится в массивах значений, возвращает true, иначе - false
+bool JSONObject::is_in_arrays(const std::string& key) const // если такой ключ хранится в массивах значений, возвращает true, иначе - false
 {
     if (name_to_values.find(key) == name_to_values.end())
         return false;
@@ -158,7 +158,7 @@ bool JSONObject::is_in_arrays(const std::string& key) // если такой к�
     return true;
 }
 
-bool JSONObject::is_in_object_arrays(const std::string& key) // если такой ключ хранится в массивах JSON-объектов, возвращает true, иначе - false
+bool JSONObject::is_in_object_arrays(const std::string& key) const // если такой ключ хранится в массивах JSON-объектов, возвращает true, иначе - false
 {
     if (name_to_objects.find(key) == name_to_objects.end())
         return false;
@@ -200,36 +200,6 @@ int JSONObject::find_block_end_2(const std::string& text, int curpos) const// в
     return (int)pos1;
 }
 
-void JSONObject::operator=(const JSONObject& other) // присваивание/копирование
-{
-    for (const auto& i : other.name_to_values)
-    {
-        std::list<std::string> tmp;
-        for (const auto& j : i.second)
-            tmp.push_back(j);
-    }
-
-    for (const auto& i : other.name_to_object)
-    {
-        JSONObject tmp(i.second);
-        name_to_object.emplace(std::make_pair(i.first, tmp));
-    }
-
-    for (const auto& i : other.name_to_objects)
-    {
-        std::list<JSONObject> tmp1;
-        for (const auto& j : i.second)
-        {
-            JSONObject tmp2(j);
-            tmp1.push_back(tmp2);
-        }
-        name_to_objects.emplace(std::make_pair(i.first, tmp1));
-    }
-
-    for (const auto& i : other.name_to_value)
-        name_to_value.emplace(std::make_pair(i.first, i.second));
-}
-
 void JSONObject::insert_value(const std::string& key, std::string value)
 {
     name_to_value.emplace(std::make_pair(key, value));
@@ -258,7 +228,7 @@ void JSONObject::insert_object_array(const std::string& key, const std::string& 
 
 }
 
-void JSONObject::insert_array(const std::string& key, const std::string& array)
+std::list<std::string> JSONObject::create_array(const std::string& array) const
 {
     size_t pos2;
     size_t pos1 = 0;
@@ -267,10 +237,10 @@ void JSONObject::insert_array(const std::string& key, const std::string& array)
     while(pos1 != -1)
     {
         pos2 = array.find_first_of("\"",pos1 + 1);
-        std::string value = array.substr(pos1 + 1, pos2 - pos1);
+        std::string value = array.substr(pos1 + 1, pos2 - pos1 - 1);
         values.push_back(value);
         pos1 = array.find_first_of("\"", pos2 + 1);
     }
 
-    name_to_values.emplace(std::make_pair(key, values));
+    return values;
 }
