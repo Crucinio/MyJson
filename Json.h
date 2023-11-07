@@ -23,18 +23,34 @@ private:
     std::unordered_map <std::string, std::list<std::string> > name_to_values;
     
     // assisting parsing function, return index of OBJECT string block end
-    int find_block_end_1(const std::string&, int) const;
+    int find_block_end_obj(const std::string&, int) const;
 
     // assisting parsing function, return index of ARRAY string block end
-    int find_block_end_2(const std::string&, int) const;
+    int find_block_end_array(const std::string&, int) const;
 
+    // picks and processes a value beginning from /begin/
+    std::string pick_val(std::string& source, int begin);
+
+    // picks and processes an array of values beginning from /begin/
+    std::list<std::string> pick_val_array(std::string& source, int begin);
+
+    // picks and processes an array of objects from /begin/
+    std::list<JSONObject> pick_obj_array(std::string& source, int begin);
+
+    int valid_value(std::string& source, int begin);
+
+    bool valid_array(std::string& source, int begin, int end);
+
+    bool valid_obj_array(std::string& source, int begin, int end);
 public:
 
     ~JSONObject() = default;
     JSONObject() = default;
 
     // String constructor
-    explicit JSONObject(std::string);
+    explicit JSONObject(std::string& source);
+
+    explicit JSONObject(std::string& source, int begin);
 
     // Copying
     JSONObject(const JSONObject&);
@@ -69,19 +85,17 @@ public:
     // X = list of objects
     bool is_in_object_arrays(const std::string& key) const;
 
-    // paste into
     // values
     void insert_value(const std::string& key, std::string value);
 
     // objects
     void insert_object(const std::string& key, JSONObject& obj);
 
-    // assistant methods of inserting strings into JSON
     // arrays of objects
     void insert_object_array(const std::string& key, const std::string& array);
 
-    // arrays of values
-    std::list<std::string> create_array(const std::string& array) const;
+    // retrun whether we can make a valid object from source or not
+    bool is_valid(std::string& source, int begin);
 };
 
 
