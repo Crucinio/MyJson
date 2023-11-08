@@ -95,7 +95,7 @@ public:
     void insert_object_array(const std::string& key, const std::string& array);
 
     // retrun whether we can make a valid object from source or not
-    bool is_valid(std::string& source, int begin);
+    bool is_valid(std::string& source, int begin, int end);
 };
 
 

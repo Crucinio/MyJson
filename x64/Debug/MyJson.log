@@ -1,14 +1,1 @@
-﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(534,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (JSON_tests.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-  Json.cpp
-D:\PG\MyJson\MyJson\Json.cpp(20,48): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(32,54): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(77,48): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(89,54): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(314,44): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(320,67): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(329,48): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(335,47): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(371,42): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-  Source.cpp
-  Generating Code...
-  MyJson.vcxproj -> D:\PG\MyJson\MyJson\x64\Debug\MyJson.exe
+﻿  MyJson.vcxproj -> C:\proga\MyJson\MyJson\x64\Debug\MyJson.exe
