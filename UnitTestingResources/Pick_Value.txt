@@ -1,0 +1,5 @@
+"value number one - basic"
+"value number two - spec name = \"Hello to you patua\""
+"value number three - erase me bitch\b\b\b\b\b"
+"value number four - I\tam\tpretty\tfar\taren't\tI\t?"
+"value number five - tricky bitch \"\"\"\"\"\"\"\"\"\"\"\"\""

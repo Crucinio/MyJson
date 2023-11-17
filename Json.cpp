@@ -4,118 +4,157 @@
 
 enum expectings{key, value, object, array, object_array, unidentified, unidentified_array};
 
-JSONObject::JSONObject(std::string& source)
+JSONObject::JSONObject(std::string& source) // ???
 {
+    int start = source.find_first_of('{', 0);
+    if (start == -1)
+        throw new std::invalid_argument("source");
 
+    int actual_end = find_block_end_obj(source, start);
 
-    size_t pos1 = source.find_first_of("{");
-    size_t pos2 = 0;
-    while (true)
-    {
-        // KEY (OK)
-        pos1 = source.find_first_of("\"", pos1);
-        if (pos1 == -1)
-            return;
+    std::string k;
+    expectings current = key;
+    while (start < actual_end) {
+        start++;
+        if (current == key) {
+            current = unidentified;
+            if (has_next_key(source, start))
+                k = pick_val(source, start);
+            else
+                return;
+        }
+        else if (current == value) {
+            current = key;
+            this->name_to_value.emplace(std::make_pair(k, pick_val(source, start)));
+        }
+        else if (current == object) {
+            JSONObject tmp(source, start);
+            this->name_to_object.emplace(std::make_pair(k, tmp));
+        }
+        else if (current == array) {
+            std::list<std::string> tmp = pick_val_array(source, start);
+            this->name_to_values.emplace(std::make_pair(k, tmp));
+        }
+        else if (current == object_array) {
+            std::list<JSONObject> tmp = pick_obj_array(source, start);
+            this->name_to_objects.emplace(std::make_pair(k, tmp));
+        }
+        else if (current == unidentified) {
+            for (; start < source.size(); start++) {
+                if (source[start] == '\"')
+                    current = value;
+                else if (source[start] == '{')
+                    current = object;
+                else if (source[start] == '[')
+                    current = unidentified_array;
+                else
+                    continue;
 
-        std::string key = pick_val(source, pos1);
-        pos2 = pos1 + key.size() + 1;
-        pos1 = pos2 + 1;
-        // KEY
-        size_t check_pos = source.find_first_of("{[", pos1);
-        // VAL (OK)
-        if (check_pos > source.find_first_of("\"", pos1)) 
-        {
-            pos1 = source.find_first_of("\"", pos1);
-            if (pos1 == -1)
+                break;
+            }
+        }
+        else if (current == unidentified_array) {
+            int arr_end = find_block_end_array(source, start);
+            if (arr_end == -1 || arr_end >= actual_end)
                 return;
 
-            std::string value = pick_val(source, pos1);
-            name_to_value.emplace(std::make_pair(key, value));
-            pos1 += value.size() + 2;
-        }
-        // VAL
+            int pos_obj = source.find_first_of('{', start);
+            int pos_val = source.find_first_of('\"', start);
+            bool v = pos_val != -1 && pos_val < arr_end;
+            bool o = pos_obj != -1 && pos_obj < arr_end;
+            if (!v && !o)
+                return;
 
-        // OBJ (WA)
-        else if (source[check_pos] == '{') 
-        {
-            size_t end_pos = find_block_end_obj(source, (int)check_pos);
-            std::string sub_data = source.substr(check_pos, end_pos - check_pos + 1);
-            JSONObject tmp(sub_data);
-            //JSONObject tmp(source, (int)check_pos);
-            name_to_object[key] = tmp;
-            pos1 = end_pos + 1;
-        }
-        // OBJ
-
-        // ARR (OK)
-        else if (source[check_pos] == '[') 
-        {
-            size_t end_pos = find_block_end_array(source, (int)check_pos);
-            std::string array = source.substr(check_pos, end_pos - check_pos + 1);
-            if(array.find_first_of("{}", 0) == -1)
-                this->name_to_values[key] = pick_val_array(source, (int)check_pos);
+            if (pos_obj < pos_val) {
+                if (o) {
+                    current = object_array;
+                }
+                else if (v) {
+                    current = array;
+                }
+            }
+            else if (v)
+                current = array;
             else
-                insert_object_array(key, array);
-
-            pos1 = end_pos + 1;
+                current = object_array;
         }
-        //ARR
     }
 }
 
-JSONObject::JSONObject(std::string& source, int begin) // WA -> block_counter is trash
+JSONObject::JSONObject(std::string& source, int& begin) // ???
 {
-    size_t pos1 = source.find_first_of("{", begin);
-    size_t pos2 = begin;
-    while (true)
-    {
-        // KEY (OK)
-        pos1 = source.find_first_of("\"", pos1);
-        if (pos1 == -1)
-            return;
+    int start = source.find_first_of('{', begin);
+    if (start == -1)
+        throw new std::invalid_argument("source");
 
-        std::string key = pick_val(source, pos1);
-        pos2 = pos1 + key.size() + 1;
-        pos1 = pos2 + 1;
-        // KEY
-        size_t check_pos = source.find_first_of("{[", pos1);
-        // VAL (OK)
-        if (check_pos > source.find_first_of("\"", pos1)) // if it is a default name to value data
-        {
-            pos1 = source.find_first_of("\"", pos1);
-            if (pos1 == -1)
+    int actual_end = find_block_end_obj(source, start);
+
+    std::string k;
+    expectings current = key;
+    while (start < actual_end) {
+        start++;
+        if (current == key) {
+            current = unidentified;
+            if (has_next_key(source, start))
+                k = pick_val(source, start);
+            else
+                return;
+        }
+        else if (current == value) {
+            current = key;
+            this->name_to_value.emplace(std::make_pair(k, pick_val(source, start)));
+        }
+        else if (current == object) {
+            JSONObject tmp(source, start);
+            this->name_to_object.emplace(std::make_pair(k, tmp));
+        }
+        else if (current == array) {
+            std::list<std::string> tmp = pick_val_array(source, start);
+            this->name_to_values.emplace(std::make_pair(k, tmp));
+        }
+        else if (current == object_array) {
+            std::list<JSONObject> tmp = pick_obj_array(source, start);
+            this->name_to_objects.emplace(std::make_pair(k, tmp));
+        }
+        else if (current == unidentified) {
+            for (; start < source.size(); start++) {
+                if (source[start] == '\"')
+                    current = value;
+                else if (source[start] == '{')
+                    current = object;
+                else if (source[start] == '[')
+                    current = unidentified_array;
+                else
+                    continue;
+
+                break;
+            }
+        }
+        else if (current == unidentified_array) {
+            int arr_end = find_block_end_array(source, start);
+            if (arr_end == -1 || arr_end >= actual_end)
+                return ;
+
+            int pos_obj = source.find_first_of('{', start);
+            int pos_val = source.find_first_of('\"', start);
+            bool v = pos_val != -1 && pos_val < arr_end;
+            bool o = pos_obj != -1 && pos_obj < arr_end;
+            if (!v && !o)
                 return;
 
-            std::string value = pick_val(source, pos1);
-            name_to_value.emplace(std::make_pair(key, value));
-            pos1 += value.size() + 2;
-        }
-        // VAL
-
-        // OBJ (WA)
-        else if (source[check_pos] == '{') // if it is a beginning of a JSONObject
-        {
-            size_t end_pos = find_block_end_obj(source, (int)check_pos);
-            std::string sub_data = source.substr(check_pos, end_pos - check_pos + 1);
-            JSONObject tmp(sub_data);
-            name_to_object[key] = tmp;
-            pos1 = end_pos + 1;
-        }
-        // OBJ
-
-        // ARR (WA)
-        else if (source[check_pos] == '[') // if it is a beginning of an array
-        {
-            size_t end_pos = find_block_end_array(source, (int)check_pos);
-            std::string array = source.substr(check_pos, end_pos - check_pos + 1);
-            if (array.find_first_of("{}", 0) == -1)
-                this->name_to_values[key] = pick_val_array(array, (int)check_pos);
+            if (pos_obj < pos_val) {
+                if (o) {
+                    current = object_array;
+                }
+                else if (v) {
+                    current = array;
+                }
+            }
+            else if (v)
+                current = array;
             else
-                insert_object_array(key, array);
-
-            pos1 = end_pos + 1;
+                current = object_array;
         }
-        //ARR
     }
 }
 
@@ -221,7 +260,7 @@ bool JSONObject::is_in_object_arrays(const std::string& key) const
     return true;
 }
 
-int JSONObject::find_block_end_obj(const std::string& source, int curpos) const
+int JSONObject::find_block_end_obj(const std::string& source, int curpos)
 {
     int pos = curpos;
     int counter = 1;
@@ -246,36 +285,35 @@ int JSONObject::find_block_end_obj(const std::string& source, int curpos) const
     return pos;
 }
 
-int JSONObject::find_block_end_array(const std::string& source, int curpos) const
+int JSONObject::find_block_end_array(const std::string& source, int curpos)
 {
-    int pos = curpos;
+    int pos = curpos + 1;
     int counter = 1;
     bool counts = true;
-    while (counter > 0 && pos + 1 < source.size()) {
-        pos++;
+    while (pos < source.size()) {
         if (source[pos] == '\"') {
-            if (pos > curpos && source[pos - 1] == '\\')
-                pos++;
-            else
+            if (source[pos - 1] != '\\')
                 counts = (counts + 1) % 2;
         }
         else if (counts && source[pos] == ']')
-            counter--;
-        else if (counts && source[pos] == '[')
-            counter++;
+            return pos;
+
+        pos++;
     }
 
-    if (pos == source.size())
-        return -1;
-
-    return pos;
+    return -1;
 }
 
-std::string JSONObject::pick_val(std::string& source, int begin)
+std::string JSONObject::pick_val(std::string& source, int& begin) // (OK)
 {
-    if (++begin >= source.size())
-        throw new std::exception("begin >= size of the source");
+    if (begin + 1 >= source.size())
+        throw new std::invalid_argument("begin");
 
+    begin = source.find_first_of('\"', begin);
+    if (begin + 1 > source.size() || begin == -1)
+        throw new std::invalid_argument("source");
+
+    begin++;
     std::stack<char> pile;
     while (begin < source.size()) {
         char cur = source[begin];
@@ -294,8 +332,7 @@ std::string JSONObject::pick_val(std::string& source, int begin)
                 begin += 2;
             }
             else {
-                pile.push(cur);
-                break;
+                throw new std::invalid_argument("source");
             }
         }
         else if (cur == '\"')
@@ -306,6 +343,9 @@ std::string JSONObject::pick_val(std::string& source, int begin)
         }
     }
 
+    if (begin == source.size())
+        throw new std::invalid_argument("source");
+
     std::string res(pile.size(),'0');
     while (pile.size() > 0) {
         res[pile.size() - 1] = pile.top();
@@ -315,23 +355,30 @@ std::string JSONObject::pick_val(std::string& source, int begin)
     return res;
 }
 
-std::list<std::string> JSONObject::pick_val_array(std::string& source, int begin)
+std::list<std::string> JSONObject::pick_val_array(std::string& source, int& begin)
 {
+    begin = source.find_first_of('[', begin);
+    if (begin == -1)
+        throw new std::invalid_argument("source");
+
     int pos1 = begin;
     int end = find_block_end_array(source, begin);
-    pos1 = source.find_first_of("\"", pos1);
+    if (end == -1)
+        throw new std::invalid_argument("source");
+
     std::list<std::string> values;
     while (pos1 < end && pos1 != -1)
     {
         std::string value = pick_val(source, pos1);
         values.push_back(value);
-        pos1 = source.find_first_of("\"", pos1 + value.size() + 2);
+        pos1++;
+        pos1 = source.find_first_of('\"', pos1);
     }
 
     return values;
 }
 
-std::list<JSONObject> JSONObject::pick_obj_array(std::string& source, int begin)
+std::list<JSONObject> JSONObject::pick_obj_array(std::string& source, int& begin)
 {
     std::list<JSONObject> res;
     int pos1 = source.find_first_of("{", begin);
@@ -346,45 +393,57 @@ std::list<JSONObject> JSONObject::pick_obj_array(std::string& source, int begin)
     return res;
 }
 
-int JSONObject::valid_value(std::string& source, int begin)
+bool JSONObject::has_next_key(std::string& source, int pos)
 {
-    int counter = 0;
-    for (; begin < source.size(); begin++) {
-        if (source[begin] == '\"' && source[begin - 1] != '\\')
+    if (pos + 1 >= source.size())
+        return false;
+
+    pos = source.find_first_of('\"', pos);
+    if (pos + 1 > source.size() || pos == -1)
+        return false;
+
+    pos++;
+    std::stack<char> pile;
+    while (pos < source.size()) {
+        char cur = source[pos];
+        if (cur == '\\') {
+            if (pos + 1 < source.size()) {
+                char next = source[pos + 1];
+                if (next == '\\')
+                    pile.push(cur);
+                else if (next == '"')
+                    pile.push('\"');
+                else if (next == 'b')
+                    pile.pop();
+                else if (next == 't')
+                    pile.push('\t');
+
+                pos += 2;
+            }
+            else {
+                return false;
+            }
+        }
+        else if (cur == '\"')
             break;
+        else {
+            pile.push(cur);
+            pos++;
+        }
     }
 
-    if (begin == source.size())
-        return -1;
+    if (pos == source.size())
+        return false;
 
-    return begin;
-}
-
-bool JSONObject::valid_array(std::string& source, int begin, int end)
-{
-    int counter = 0;
-    while (begin < end) {
-        begin++;
-        if (source[begin] == '\"' && source[begin - 1] != '\\')
-            counter++;
+    std::string res(pile.size(), '0');
+    while (pile.size() > 0) {
+        res[pile.size() - 1] = pile.top();
+        pile.pop();
     }
 
-    return !(counter % 2);
+    return true;
 }
 
-bool JSONObject::valid_obj_array(std::string& source, int begin, int end)
-{
-    while (begin < end) {
-        int last = find_block_end_obj(source, begin);
-        if (last == -1)
-            return false;
-
-        bool res = is_valid(source, begin, last);
-        if (!res)
-            return false;
-    }
-
-}
 
 void JSONObject::insert_value(const std::string& key, std::string value) // Wrong real
 {
@@ -398,8 +457,8 @@ void JSONObject::insert_object(const std::string& key, JSONObject& obj) // Wrong
 
 void JSONObject::insert_object_array(const std::string& key, const std::string& array)
 {
-    size_t pos1 = array.find_first_of("{",0);
-    size_t pos2;
+    int pos1 = array.find_first_of("{",0);
+    int pos2;
     std::list<JSONObject> objects;
     while(pos1 != -1)
     {
@@ -411,108 +470,7 @@ void JSONObject::insert_object_array(const std::string& key, const std::string& 
     }
 
     name_to_objects.emplace(std::make_pair(key, objects));
-
 }
 
-bool JSONObject::is_valid(std::string& source, int begin, int end)
-{
-    int start = source.find_first_of('{', begin);
-    if (start == -1)
-        return false;
-
-    expectings current = key;
-    while (start < end) {
-        start++;
-        if (current == key) {
-            current = unidentified;
-            start = valid_value(source, start);
-            if (start == -1)
-                return false;
-
-            start++;
-        }
-        else if (current == value) {
-            current = key;
-            start = valid_value(source, start);
-            if (start == -1)
-                return false;
-
-            start++;
-        }
-        else if (current == object) {
-            int obj_end = find_block_end_obj(source, start);
-            if (obj_end == -1)
-                return false;
-
-            bool res = is_valid(source, start, end);
-            if (!res)
-                return false;
-
-            start = find_block_end_obj(source, start);
-        }
-        else if (current == array) {
-            int arr_end = find_block_end_array(source, start);
-            if (arr_end == -1)
-                return false;
-
-            bool res = valid_array(source, start, arr_end);
-            if (!res)
-                return false;
-
-            start = arr_end;
-        }
-        else if (current == object_array) {
-            int arr_end = find_block_end_array(source, start);
-            if (arr_end == -1)
-                return false;
-
-            bool res = valid_obj_array(source, start, arr_end);
-            if (!res)
-                return false;
-            start = arr_end + 1;
-        }
-        else if (current == unidentified) {
-            for (; start < source.size(); start++) {
-                if (source[start] == '\"')
-                    current = value;
-                else if (source[start] == '{')
-                    current = object;
-                else if (source[start] == '[')
-                    current = unidentified_array;
-                else
-                    continue;
-
-                break;
-            }
-        }
-        else if (current == unidentified_array) {
-            int arr_end = find_block_end_array(source, start);
-            if (arr_end == -1 || arr_end >= end)
-                return false;
-
-            int pos_obj = source.find_first_of('{', start);
-            int pos_val = source.find_first_of('\"', start);
-            bool v = pos_val != -1 && pos_val < arr_end;
-            bool o = pos_obj != -1 && pos_obj < arr_end;
-            if (!v && !o)
-                return false;
-             
-            if (pos_obj < pos_val) {
-                if (o) {
-                    current = object_array;
-                }
-                else if (v) {
-                    current = array;
-                }
-            }
-            else if (v)
-                current = array;
-            else
-                current = object_array;
-        }
-    }
-
-    return true;
-}
 
 
