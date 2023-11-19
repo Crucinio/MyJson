@@ -10,7 +10,87 @@ JSONObject::JSONObject(std::string& source) // ???
     if (begin == -1)
         throw new std::invalid_argument("source");
 
-    int actual_end = find_block_end_obj(source, begin);
+    std::string k;
+    expectings current = key;
+    while (has_next_key(source, ++begin)) {
+
+        // pick the key
+        k = pick_val(source, begin);
+        begin++;
+
+        // identify target field using control symbols \", { or [
+        for (; begin < source.size(); begin++) {
+            if (source[begin] == '\"')
+                current = value;
+            else if (source[begin] == '{')
+                current = object;
+            else if (source[begin] == '[')
+                current = unidentified_array;
+            else
+                continue;
+
+            if (begin == source.size())
+                throw new std::invalid_argument("Key does not correspond to anything! Key = " + key);
+
+            break;
+        }
+
+        // if the target is an array, determine the type of the array using control symbols \", {
+        if (current == unidentified_array) {
+            int pos_obj = source.find_first_of('{', begin);
+            int pos_val = source.find_first_of('\"', begin);
+            int pos_ctrl = source.find_first_of(']', begin);
+            if (pos_ctrl == -1)
+                throw new std::invalid_argument("Key " + k + "corresponds to invalid array");
+
+            if (pos_ctrl < pos_val && pos_ctrl < pos_obj)
+                current = array;
+            else {
+                bool v = pos_val != -1;
+                bool o = pos_obj != -1;
+                if (!v && !o)
+                    return;
+
+                if (pos_obj < pos_val) {
+                    if (o) {
+                        current = object_array;
+                    }
+                    else if (v) {
+                        current = array;
+                    }
+                }
+                else if (v)
+                    current = array;
+                else
+                    current = object_array;
+            }
+        }
+
+        // after identifying the target, pick it and continue
+        if (current == value) {
+            this->name_to_value[k] = pick_val(source, begin);
+        }
+        else if (current == object) {
+            JSONObject tmp(source, begin);
+            this->name_to_object[k] = tmp;
+        }
+        else if (current == array) {
+            std::list<std::string> tmp = pick_val_array(source, begin);
+
+            this->name_to_values[k] = tmp;
+        }
+        else if (current == object_array) {
+            std::list<JSONObject> tmp = pick_obj_array(source, begin);
+            this->name_to_objects[k] = tmp;
+        }
+    }
+}
+
+JSONObject::JSONObject(std::string& source, int& begin) // ???
+{
+    begin = source.find_first_of('{', begin);
+    if (begin == -1)
+        throw new std::invalid_argument("source");
 
     std::string k;
     expectings current = key;
@@ -34,37 +114,38 @@ JSONObject::JSONObject(std::string& source) // ???
             if (begin == source.size())
                 return;
 
-            begin--;
             break;
         }
 
         // if the target is an array, determine the type of the array using control symbols \", {
         if (current == unidentified_array) {
-            int arr_end = find_block_end_array(source, begin);
-            if (arr_end == -1 || arr_end >= actual_end)
-                return;
-
             int pos_obj = source.find_first_of('{', begin);
             int pos_val = source.find_first_of('\"', begin);
-            bool v = pos_val != -1 && pos_val < arr_end;
-            bool o = pos_obj != -1 && pos_obj < arr_end;
-            if (!v && !o)
-                return;
+            int pos_ctrl = source.find_first_of(']', begin);
+            if (pos_ctrl == -1)
+                throw new std::invalid_argument("Key " + k + "corresponds to invalid array");
 
-            if (pos_obj < pos_val) {
-                if (o) {
-                    current = object_array;
-                }
-                else if (v) {
-                    current = array;
-                }
-            }
-            else if (v)
+            if (pos_ctrl < pos_val && pos_ctrl < pos_obj)
                 current = array;
-            else
-                current = object_array;
+            else {
+                bool v = pos_val != -1;
+                bool o = pos_obj != -1;
+                if (!v && !o)
+                    return;
 
-            begin--;
+                if (pos_obj < pos_val) {
+                    if (o) {
+                        current = object_array;
+                    }
+                    else if (v) {
+                        current = array;
+                    }
+                }
+                else if (v)
+                    current = array;
+                else
+                    current = object_array;
+            }
         }
 
         // after identifying the target, pick it and continue
@@ -77,94 +158,6 @@ JSONObject::JSONObject(std::string& source) // ???
         }
         else if (current == array) {
             std::list<std::string> tmp = pick_val_array(source, begin);
-            if (begin > actual_end)
-                throw new std::invalid_argument("source");
-
-            this->name_to_values[k] = tmp;
-        }
-        else if (current == object_array) {
-            std::list<JSONObject> tmp = pick_obj_array(source, begin);
-            this->name_to_objects[k] = tmp;
-        }
-    }
-}
-
-JSONObject::JSONObject(std::string& source, int& begin) // ???
-{
-    begin = source.find_first_of('{', begin);
-    if (begin == -1)
-        throw new std::invalid_argument("source");
-
-    int actual_end = find_block_end_obj(source, begin);
-
-    std::string k;
-    expectings current = key;
-    while (has_next_key(source, begin)) {
-        begin++;
-
-        // pick the key
-        k = pick_val(source, begin);
-        begin++;
-
-        // identify target field using control symbols \", { or [
-        for (; begin < source.size(); begin++) {
-            if (source[begin] == '\"')
-                current = value;
-            else if (source[begin] == '{')
-                current = object;
-            else if (source[begin] == '[')
-                current = unidentified_array;
-            else
-                continue;
-
-            if (begin == source.size())
-                return;
-
-            begin--;
-            break;
-        }
-
-        // if the target is an array, determine the type of the array using control symbols \", {
-        if (current == unidentified_array) {
-            int arr_end = find_block_end_array(source, begin);
-            if (arr_end == -1 || arr_end >= actual_end)
-                return;
-
-            int pos_obj = source.find_first_of('{', begin);
-            int pos_val = source.find_first_of('\"', begin);
-            bool v = pos_val != -1 && pos_val < arr_end;
-            bool o = pos_obj != -1 && pos_obj < arr_end;
-            if (!v && !o)
-                return;
-
-            if (pos_obj < pos_val) {
-                if (o) {
-                    current = object_array;
-                }
-                else if (v) {
-                    current = array;
-                }
-            }
-            else if (v)
-                current = array;
-            else
-                current = object_array;
-
-            begin--;
-        }
-
-        // after identifying the target, pick it and continue
-        if (current == value) {
-            this->name_to_value[k] = pick_val(source, begin);
-        }
-        else if (current == object) {
-            JSONObject tmp(source, begin);
-            this->name_to_object[k] = tmp;
-        }
-        else if (current == array) {
-            std::list<std::string> tmp = pick_val_array(source, begin);
-            if (begin > actual_end)
-                throw new std::invalid_argument("source");
 
             this->name_to_values[k] = tmp;
         }
@@ -277,31 +270,6 @@ bool JSONObject::is_in_object_arrays(const std::string& key) const
     return true;
 }
 
-int JSONObject::find_block_end_obj(const std::string& source, int curpos)
-{
-    int pos = curpos;
-    int counter = 1;
-    bool counts = true;
-    while (counter > 0 && pos + 1 < source.size()) {
-        pos++;
-        if (source[pos] == '\"') {
-            if (pos > curpos && source[pos - 1] == '\\')
-                pos++;
-            else
-                counts = (counts + 1) % 2;
-        }
-        else if (counts && source[pos] == '}')
-            counter--;
-        else if (counts && source[pos] == '{')
-            counter++;
-    }
-
-    if (pos == source.size())
-        return -1;
-
-    return pos;
-}
-
 int JSONObject::find_block_end_array(const std::string& source, int curpos)
 {
     int pos = curpos + 1;
@@ -395,17 +363,38 @@ std::list<std::string> JSONObject::pick_val_array(std::string& source, int& begi
 
 std::list<JSONObject> JSONObject::pick_obj_array(std::string& source, int& begin)
 {
-    std::list<JSONObject> res;
-    int pos1 = source.find_first_of("{", begin);
-    while (pos1 != -1){
-        int pos2 = find_block_end_obj(source, pos1);
-        JSONObject tmp(source, pos1);
-        res.push_back(tmp);
-        pos1 = pos2 - pos1 + 1;
-        pos1 = source.find_first_of("{", pos1);
+    int pos1 = source.find_first_of('{', begin);
+    int pos2 = source.find_first_of(']', begin);
+
+    if (pos2 == -1)
+        throw new std::invalid_argument("invalid source array. Position = " + std::to_string(begin));
+
+    std::list<JSONObject> tmp;
+    if (pos1 == -1 || pos2 < pos1) {
+        begin = pos2;
+        return tmp;
     }
 
-    return res;
+    //std::string source = "{\"TestObjects\"[{    }     {}{\"key\"\"val\"}{}    {}{\"objs\"[{}{}]}]}";
+
+    while (pos1 != -1) {
+        
+        JSONObject obj(source, pos1);
+        begin = source.find_first_of(']', pos1);
+        if (begin == -1)
+            throw new std::invalid_argument("invalid source array. Position = " + std::to_string(begin));
+
+        tmp.push_back(obj);
+        pos1++;
+
+        pos1 = source.find_first_of('{', pos1);
+
+        if (pos1 > begin) {
+            begin = pos2;
+            break;
+        }
+    }
+    return tmp;
 }
 
 bool JSONObject::has_next_key(std::string& source, int& pos)
@@ -446,23 +435,5 @@ void JSONObject::insert_object(const std::string& key, JSONObject& obj) // Wrong
 {
     name_to_object.emplace(std::make_pair(key, obj));
 }
-
-void JSONObject::insert_object_array(const std::string& key, const std::string& array)
-{
-    int pos1 = array.find_first_of("{",0);
-    int pos2;
-    std::list<JSONObject> objects;
-    while(pos1 != -1)
-    {
-        pos2 = find_block_end_obj(array, (int)pos1);
-        std::string text = array.substr(pos1, pos2 - pos1 + 1);
-        JSONObject object(text);
-        objects.push_back(object);
-        pos1 = array.find_first_of("{", pos2 + 1);
-    }
-
-    name_to_objects.emplace(std::make_pair(key, objects));
-}
-
 
 

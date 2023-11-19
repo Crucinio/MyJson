@@ -75,9 +75,6 @@ public:
     // arrays of objects
     void insert_object_array(const std::string& key, const std::string& array);
 
-    // assisting parsing function, return index of OBJECT string block end
-    static int find_block_end_obj(const std::string&, int);
-
     // assisting parsing function, return index of ARRAY string block end
     static int find_block_end_array(const std::string&, int);
 
