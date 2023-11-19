@@ -93,7 +93,9 @@ public:
     // retrun whether we can make a valid object from source or not
     static bool is_valid(std::string& source, int begin, int end);
 
-    static bool has_next_key(std::string& source, int pos);
+    //returns whether file has any more keys to process before the }.
+    // NOTE if the { symbol is not found, it throws an invalid_argument, since file doe not contain the closing bracket of the object to begin with...
+    static bool has_next_key(std::string& source, int& pos);
 };
 
 
