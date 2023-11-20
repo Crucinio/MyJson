@@ -14,4 +14,5 @@ int main()
 	in.close();
 
 	JSONObject test_object(line);
+	std::cout << test_object.to_string(0);
 }

@@ -1,20 +1,21 @@
 ﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(534,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (JSON_tests.vcxproj).  This can lead to incorrect clean and rebuild behavior.
   Json.cpp
-D:\PG\MyJson\MyJson\Json.cpp(9,45): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(40,59): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(41,60): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(42,60): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(91,45): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(122,59): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(123,60): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(11,45): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(42,59): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(43,60): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(44,60): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(92,45): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(123,59): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 D:\PG\MyJson\MyJson\Json.cpp(124,60): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(297,46): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(345,45): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(366,48): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(367,48): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(383,48): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(390,47): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(402,45): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(406,49): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\PG\MyJson\MyJson\Json.cpp(426): warning C4715: 'JSONObject::has_next_key': not all control paths return a value
+D:\PG\MyJson\MyJson\Json.cpp(125,60): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(195,46): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(243,45): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(264,48): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(265,48): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(281,48): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(288,47): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(300,45): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(304,48): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(618,116): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(324): warning C4715: 'JSONObject::has_next_key': not all control paths return a value
   MyJson.vcxproj -> D:\PG\MyJson\MyJson\x64\Debug\MyJson.exe

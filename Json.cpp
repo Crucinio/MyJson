@@ -1,8 +1,10 @@
 
 #include "Json.h"
 #include<stack>
+#include<stdexcept>
+#include<fstream>
 
-enum expectings{key, value, object, array, object_array, unidentified, unidentified_array};
+enum expecting{key, value, object, array, object_array, unidentified, unidentified_array};
 
 JSONObject::JSONObject(std::string& source) // ???
 {
@@ -11,7 +13,7 @@ JSONObject::JSONObject(std::string& source) // ???
         throw new std::invalid_argument("source");
 
     std::string k;
-    expectings current = key;
+    expecting current = key;
     while (has_next_key(source, ++begin)) {
 
         // pick the key
@@ -66,22 +68,21 @@ JSONObject::JSONObject(std::string& source) // ???
             }
         }
 
-        // after identifying the target, pick it and continue
+        // after identifying the target, pick it and insert/rewrite
         if (current == value) {
-            this->name_to_value[k] = pick_val(source, begin);
+            this->key_to_value[k] = pick_val(source, begin);
         }
         else if (current == object) {
             JSONObject tmp(source, begin);
-            this->name_to_object[k] = tmp;
+            this->key_to_object[k] = tmp;
         }
         else if (current == array) {
-            std::list<std::string> tmp = pick_val_array(source, begin);
-
-            this->name_to_values[k] = tmp;
+            std::list<std::string> tmp = pick_val_list(source, begin);
+            this->key_to_value_list[k] = tmp;
         }
         else if (current == object_array) {
-            std::list<JSONObject> tmp = pick_obj_array(source, begin);
-            this->name_to_objects[k] = tmp;
+            std::list<JSONObject> tmp = pick_obj_list(source, begin);
+            this->key_to_object_list[k] = tmp;
         }
     }
 }
@@ -93,7 +94,7 @@ JSONObject::JSONObject(std::string& source, int& begin) // ???
         throw new std::invalid_argument("source");
 
     std::string k;
-    expectings current = key;
+    expecting current = key;
     while (has_next_key(source, ++begin)) {
 
         // pick the key
@@ -123,7 +124,7 @@ JSONObject::JSONObject(std::string& source, int& begin) // ???
             int pos_val = source.find_first_of('\"', begin);
             int pos_ctrl = source.find_first_of(']', begin);
             if (pos_ctrl == -1)
-                throw new std::invalid_argument("Key " + k + "corresponds to invalid array");
+                throw new std::invalid_argument("Key " + k + " corresponds to invalid array");
 
             if (pos_ctrl < pos_val && pos_ctrl < pos_obj)
                 current = array;
@@ -148,126 +149,23 @@ JSONObject::JSONObject(std::string& source, int& begin) // ???
             }
         }
 
-        // after identifying the target, pick it and continue
+        // after identifying the target, pick it and insert/rewrite
         if (current == value) {
-            this->name_to_value[k] = pick_val(source, begin);
+            this->key_to_value[k] = pick_val(source, begin);
         }
         else if (current == object) {
             JSONObject tmp(source, begin);
-            this->name_to_object[k] = tmp;
+            this->key_to_object[k] = tmp;
         }
         else if (current == array) {
-            std::list<std::string> tmp = pick_val_array(source, begin);
-
-            this->name_to_values[k] = tmp;
+            std::list<std::string> tmp = pick_val_list(source, begin);
+            this->key_to_value_list[k] = tmp;
         }
         else if (current == object_array) {
-            std::list<JSONObject> tmp = pick_obj_array(source, begin);
-            this->name_to_objects[k] = tmp;
+            std::list<JSONObject> tmp = pick_obj_list(source, begin);
+            this->key_to_object_list[k] = tmp;
         }
     }
-}
-
-JSONObject::JSONObject(const JSONObject& other) // конструктор копирования
-{   
-    for (const auto& i : other.name_to_values)
-    {
-        std::list<std::string> tmp;
-        for (const auto& j : i.second)
-            tmp.push_back(j);
-    }
-
-    for (const auto& i : other.name_to_object)
-    {
-        JSONObject tmp(i.second);
-        name_to_object.emplace(std::make_pair(i.first, tmp));
-    }
-
-    for (const auto& i : other.name_to_objects)
-    {
-        std::list<JSONObject> tmp1;
-        for (const auto& j : i.second)
-        {
-            JSONObject tmp2(j);
-            tmp1.push_back(tmp2);
-        }
-        name_to_objects.emplace(std::make_pair(i.first, tmp1));
-    }
-
-    for (const auto& i : other.name_to_value)
-        name_to_value.emplace(std::make_pair(i.first, i.second));
-}
-
-const JSONObject& JSONObject::get_object(const std::string& key) const
-{
-    return name_to_object.at(key);
-}
-
-const std::list<JSONObject>& JSONObject::get_objects(const std::string& key) const
-{
-    return name_to_objects.at(key);
-}
-
-const std::list<std::string>& JSONObject::get_values(const std::string& key) const
-{
-    return name_to_values.at(key);
-}
-
-const std::string& JSONObject::get_value(const std::string& key) const
-{
-    return name_to_value.at(key);
-}
-
-const std::unordered_map<std::string, JSONObject>& JSONObject::get_name_to_object() const
-{
-    return name_to_object;
-}
-
-const std::unordered_map<std::string, std::list<JSONObject> >& JSONObject::get_name_to_objects() const
-{
-    return name_to_objects;
-}
-
-const std::unordered_map<std::string, std::list<std::string> >& JSONObject::get_name_to_values() const
-{
-    return name_to_values;
-}
-
-const std::unordered_map<std::string, std::string>& JSONObject::get_name_to_value() const
-{
-    return name_to_value;
-}
-
-bool JSONObject::is_in_values(const std::string& key) const
-{
-    if (name_to_value.find(key) == name_to_value.end())
-        return false;
-
-    return true;
-}
-
-bool JSONObject::is_in_objects(const std::string& key) const
-{
-    if (name_to_object.find(key) == name_to_object.end())
-        return false;
-
-    return true;
-}
-
-bool JSONObject::is_in_arrays(const std::string& key) const
-{
-    if (name_to_values.find(key) == name_to_values.end())
-        return false;
-
-    return true;
-}
-
-bool JSONObject::is_in_object_arrays(const std::string& key) const
-{
-    if (name_to_objects.find(key) == name_to_objects.end())
-        return false;
-
-    return true;
 }
 
 int JSONObject::find_block_end_array(const std::string& source, int curpos)
@@ -331,7 +229,7 @@ std::string JSONObject::pick_val(std::string& source, int& begin) // (OK)
     if (begin == source.size())
         throw new std::invalid_argument("source");
 
-    std::string res(pile.size(),'0');
+    std::string res(pile.size(), '0');
     while (pile.size() > 0) {
         res[pile.size() - 1] = pile.top();
         pile.pop();
@@ -340,7 +238,7 @@ std::string JSONObject::pick_val(std::string& source, int& begin) // (OK)
     return res;
 }
 
-std::list<std::string> JSONObject::pick_val_array(std::string& source, int& begin)
+std::list<std::string> JSONObject::pick_val_list(std::string& source, int& begin)
 {
     begin = source.find_first_of('[', begin);
     if (begin == -1)
@@ -361,7 +259,7 @@ std::list<std::string> JSONObject::pick_val_array(std::string& source, int& begi
     return values;
 }
 
-std::list<JSONObject> JSONObject::pick_obj_array(std::string& source, int& begin)
+std::list<JSONObject> JSONObject::pick_obj_list(std::string& source, int& begin)
 {
     int pos1 = source.find_first_of('{', begin);
     int pos2 = source.find_first_of(']', begin);
@@ -378,7 +276,7 @@ std::list<JSONObject> JSONObject::pick_obj_array(std::string& source, int& begin
     //std::string source = "{\"TestObjects\"[{    }     {}{\"key\"\"val\"}{}    {}{\"objs\"[{}{}]}]}";
 
     while (pos1 != -1) {
-        
+
         JSONObject obj(source, pos1);
         begin = source.find_first_of(']', pos1);
         if (begin == -1)
@@ -403,7 +301,7 @@ bool JSONObject::has_next_key(std::string& source, int& pos)
     if (end == -1)
         throw new std::invalid_argument("Source file does not contain closing bracket for current object. Latest position = " + std::to_string(pos));
 
-    int begin  = source.find_first_of('\"', pos);
+    int begin = source.find_first_of('\"', pos);
     if (begin == -1 || begin > end) {
         pos = end;
         return false;
@@ -425,15 +323,335 @@ bool JSONObject::has_next_key(std::string& source, int& pos)
         return false;
 }
 
-
-void JSONObject::insert_value(const std::string& key, std::string value) // Wrong real
+JSONObject& JSONObject::get_object(std::string& key)
 {
-    name_to_value.emplace(std::make_pair(key, value));
+    return key_to_object.at(key);
 }
 
-void JSONObject::insert_object(const std::string& key, JSONObject& obj) // Wrong real
+std::list<JSONObject>& JSONObject::get_obj_list(std::string& key)
 {
-    name_to_object.emplace(std::make_pair(key, obj));
+    return key_to_object_list.at(key);
+}
+
+std::list<std::string>& JSONObject::get_val_list(std::string& key)
+{
+    return key_to_value_list.at(key);
+}
+
+std::string& JSONObject::get_value(std::string& key)
+{
+    return key_to_value.at(key);
+}
+
+const std::unordered_map<std::string, JSONObject>& JSONObject::get_name_to_object() const
+{
+    return key_to_object;
+}
+
+const std::unordered_map<std::string, std::list<JSONObject> >& JSONObject::get_name_to_objects() const
+{
+    return key_to_object_list;
+}
+
+const std::unordered_map<std::string, std::list<std::string> >& JSONObject::get_name_to_values() const
+{
+    return key_to_value_list;
+}
+
+const std::unordered_map<std::string, std::string>& JSONObject::get_name_to_value() const
+{
+    return key_to_value;
+}
+
+bool JSONObject::is_in_values(std::string& key) const
+{
+    if (key_to_value.find(key) == key_to_value.end())
+        return false;
+
+    return true;
+}
+
+bool JSONObject::is_in_objects(std::string& key) const
+{
+    if (key_to_object.find(key) == key_to_object.end())
+        return false;
+
+    return true;
+}
+
+bool JSONObject::is_in_val_lists(std::string& key) const
+{
+    if (key_to_value_list.find(key) == key_to_value_list.end())
+        return false;
+
+    return true;
+}
+
+bool JSONObject::is_in_obj_lists(std::string& key) const
+{
+    if (key_to_object_list.find(key) == key_to_object_list.end())
+        return false;
+
+    return true;
+}
+
+bool JSONObject::empty_values() const
+{
+    return key_to_value.size() == 0;
+}
+
+bool JSONObject::empty_objects() const
+{
+    return key_to_object.size() == 0;
+}
+
+bool JSONObject::empty_val_lists() const
+{
+    return key_to_value_list.size() == 0;
+}
+
+bool JSONObject::empty_obj_lists() const
+{
+    return key_to_object_list.size() == 0;
+}
+
+bool JSONObject::empty() const
+{
+    return key_to_value.size() == 0 &&
+        key_to_object.size() == 0 &&
+        key_to_value_list.size() == 0 &&
+        key_to_object_list.size() == 0;
+}
+
+void JSONObject::set_value(std::string& key, std::string& value)
+{
+    key_to_value[key] = value;
+}
+
+void JSONObject::set_value(std::string& source)
+{
+    int start = 0;
+    std::string key = pick_val(source, start);
+    start++;
+    std::string value = pick_val(source, start);
+    key_to_value[key] = value;
+}
+
+void JSONObject::set_object(std::string& key, JSONObject& obj)
+{
+    key_to_object[key] = obj;
+}
+
+void JSONObject::set_object(std::string& source)
+{
+    int start = 0;
+    std::string key = pick_val(source, start);
+    JSONObject val(source, ++start);
+    key_to_object[key] = val;
+}
+
+void JSONObject::set_obj_list(std::string& key, std::list<JSONObject>& list)
+{
+    key_to_object_list[key] = list;
+}
+
+void JSONObject::set_obj_list(std::string& source)
+{
+    int start = 0;
+    std::string key = pick_val(source, start);
+    std::list<JSONObject> val = pick_obj_list(source, ++start);
+    key_to_object_list[key] = val;
+}
+
+void JSONObject::set_val_list(std::string& key, std::list<std::string>& list)
+{
+    key_to_value_list[key] = list;
+}
+
+void JSONObject::set_val_list(std::string& source)
+{
+    int start = 0;
+    std::string key = pick_val(source, start);
+    std::list<std::string> val = pick_val_list(source, ++start);
+    key_to_value_list[key] = val;
+}
+
+void JSONObject::erase_value(std::string& key)
+{
+    key_to_value.erase(key);
+}
+
+void JSONObject::erase_object(std::string& key)
+{
+    key_to_object.erase(key);
+}
+
+void JSONObject::erase_val_list(std::string& key)
+{
+    key_to_value_list.erase(key);
+}
+
+void JSONObject::erase_obj_list(std::string& key)
+{
+    key_to_object_list.erase(key);
+}
+
+void JSONObject::clear_values()
+{
+    key_to_value.clear();
+}
+
+void JSONObject::clear_objects()
+{
+    key_to_object.clear();
+}
+
+void JSONObject::clear_val_lists()
+{
+    key_to_value_list.clear();
+}
+
+void JSONObject::clear_obj_lists()
+{
+    key_to_object_list.clear();
+}
+
+void JSONObject::clear()
+{
+    key_to_value.clear();
+    key_to_object.clear();
+    key_to_value_list.clear();
+    key_to_object_list.clear();
+}
+
+void JSONObject::read(std::string& path)
+{
+    std::ifstream in(path);
+    if (!in.is_open())
+        throw new std::invalid_argument("path invalid");
+
+    std::string source;
+    std::string line;
+    while (std::getline(in, line))
+        source += line;
+
+    JSONObject tmp(source);
+    key_to_value = tmp.get_name_to_value();
+    key_to_object = tmp.get_name_to_object();
+    key_to_value_list = tmp.get_name_to_values();
+    key_to_object_list = tmp.get_name_to_objects();
+}
+
+void JSONObject::read_as_field(std::string& path)
+{
+    std::ifstream in(path);
+    if (!in.is_open())
+        throw new std::invalid_argument("path invalid");
+
+    std::string source;
+    std::string line;
+    while (std::getline(in, line))
+        source += line;
+
+    int start = 0;
+    std::string key = pick_val(source, start);
+    JSONObject tmp(source, ++start);
+    key_to_object[key] = tmp;
+}
+
+void JSONObject::read_and_overwrite(std::string& path)
+{
+    std::ifstream in(path);
+    if (!in.is_open())
+        throw new std::invalid_argument("path invalid");
+
+    std::string source;
+    std::string line;
+    while (std::getline(in, line))
+        source += line;
+
+    JSONObject tmp(source);
+    for (auto l : tmp.get_name_to_value())
+        key_to_value[l.first] = l.second;
+
+    for (auto l : tmp.get_name_to_object())
+        key_to_object[l.first] = l.second;
+
+    for (auto l : tmp.get_name_to_values())
+        key_to_value_list[l.first] = l.second;
+
+    for (auto l : tmp.get_name_to_objects())
+        key_to_object_list[l.first] = l.second;
+
+}
+
+std::string JSONObject::format(std::string value)
+{
+    std::string res = "\"";
+    for (int i = 0; i < value.size(); i++) {
+        if (value[i] == '\"')
+            res += "\\\"";
+        else if (value[i] == '\'')
+            res += "\\\'";
+        else if (value[i] == '\t')
+            res += "\\t";
+        else if (value[i] == '\v')
+            res += "\\v";
+        else if (value[i] == '\b')
+            res += "\\b";
+        else if (value[i] == '\n')
+            res += "\\n";
+        else if (value[i] == '\\')
+            res += "\\\\";
+        else
+            res += value[i];
+    }
+
+    res += "\"";
+    return res;
+}
+
+std::string JSONObject::to_string(int tabs)
+{
+    std::string spacing(tabs, '\t');
+    std::string res = "{\n";
+    int counter = key_to_object.size() + key_to_value.size() + key_to_value_list.size() + key_to_object_list.size();
+    for (auto l : key_to_value) {
+        std::string key = spacing + '\t' + format(l.first);
+        std::string val = format(l.second);
+        res += key + ":" + val;
+        if (counter > 1)
+            res += ',';
+
+        res += '\n';
+        counter--;
+    }
+
+    for (auto l : key_to_value_list) {
+        std::string key = spacing + '\t' + format(l.first);
+        res += key + " : [";
+        std::list<std::string>::iterator it = l.second.begin();
+        if (it != l.second.end())
+            res += format(*it);
+
+        it++;
+        while (it != l.second.end()) {
+            res += ", " + format(*it);
+        }
+
+        counter--;
+        res += "]";
+        if (counter > 1)
+            res += ',';
+        res += '\n';
+    }
+
+    for (auto l : key_to_object) {
+
+    }
+
+    res += spacing + "}";
+    return res;
 }
 
 

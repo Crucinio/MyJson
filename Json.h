@@ -1,102 +1,135 @@
-
 #ifndef JSON_H
 #define JSON_H
-
 
 #include<unordered_map>
 #include<string>
 #include<list>
-#include<stdexcept>
 
 class JSONObject
 {
 private:
-    // key - valuse
-    std::unordered_map <std::string, std::string> name_to_value;
+    std::unordered_map <std::string, std::string> key_to_value;
 
-    // key - object
-    std::unordered_map <std::string, JSONObject> name_to_object;
+    std::unordered_map <std::string, std::string> key_to_int;
 
-    // key - list<object>
-    std::unordered_map <std::string, std::list<JSONObject> > name_to_objects;
+    std::unordered_map <std::string, std::string> key_to_bool;
 
-    // key - list<value>
-    std::unordered_map <std::string, std::list<std::string> > name_to_values;
+    std::unordered_map <std::string, JSONObject> key_to_object;
 
+    std::unordered_map <std::string, std::list<JSONObject> > key_to_object_list;
+
+    std::unordered_map <std::string, std::list<std::string> > key_to_value_list;
+
+    static int find_block_end_array(const std::string&, int); // this guy is almost useless...
 public:
 
     ~JSONObject() = default;
     JSONObject() = default;
 
-    // String constructor
-    explicit JSONObject(std::string& source);
+    // CONSTRUCTORS
+    JSONObject(std::string& source);
 
-    explicit JSONObject(std::string& source, int& begin);
+    JSONObject(std::string& source, int& begin);
 
-    // Copying
-    JSONObject(const JSONObject&);
-
-    // returns object in from name_to_object
-    const JSONObject& get_object(const std::string& key) const;
-
-    // returns vector<object> in from name_to_object
-    const std::list<JSONObject>& get_objects(const std::string& key) const;
-
-    // returns object in from name_to_object
-    const std::list<std::string>& get_values(const std::string& key) const;
-
-    // returns value from name_to_value
-    const std::string& get_value(const std::string& key) const;
-
-    const std::unordered_map <std::string, JSONObject>& get_name_to_object() const;
-    const std::unordered_map <std::string, std::list<JSONObject> >& get_name_to_objects() const;
-    const std::unordered_map <std::string, std::list<std::string> >& get_name_to_values() const;
-    const std::unordered_map <std::string, std::string>& get_name_to_value() const;
-
-    // methods that return whether key - X pair exists
-    // X = value
-    bool is_in_values(const std::string& key) const;
-
-    // X = object
-    bool is_in_objects(const std::string& key) const;
-
-    // X = list of values
-    bool is_in_arrays(const std::string& key) const;
-
-    // X = list of objects
-    bool is_in_object_arrays(const std::string& key) const;
-
-    // values
-    void insert_value(const std::string& key, std::string value);
-
-    // objects
-    void insert_object(const std::string& key, JSONObject& obj);
-
-    // arrays of objects
-    void insert_object_array(const std::string& key, const std::string& array);
-
-    // assisting parsing function, return index of ARRAY string block end
-    static int find_block_end_array(const std::string&, int);
-
-    // picks and processes a value beginning from /begin/
+    // PROCESSING
     static std::string pick_val(std::string& source, int& begin);
 
-    // picks and processes an array of values beginning from /begin/
-    static std::list<std::string> pick_val_array(std::string& source, int& begin);
+    static std::list<std::string> pick_val_list(std::string& source, int& begin);
 
-    // picks and processes an array of objects from /begin/
-    static std::list<JSONObject> pick_obj_array(std::string& source, int& begin);
+    static std::list<JSONObject> pick_obj_list(std::string& source, int& begin);
 
-    // retrun whether we can make a valid object from source or not
-    static bool is_valid(std::string& source, int begin, int end);
+    static bool has_next_key(std::string& source, int& begin);
 
-    //returns whether file has any more keys to process before the }.
-    // NOTE if the { symbol is not found, it throws an invalid_argument, since file doe not contain the closing bracket of the object to begin with...
-    static bool has_next_key(std::string& source, int& pos);
+    // FIELD ACCESS
+    std::string& get_value(std::string& key);
+
+    JSONObject& get_object(std::string& key);
+
+    std::list<JSONObject>& get_obj_list(std::string& key);
+
+    std::list<std::string>& get_val_list(std::string& key);
+
+    // CONTAINERS ACCESS
+    const std::unordered_map <std::string, JSONObject>& get_name_to_object() const;
+
+    const std::unordered_map <std::string, std::list<JSONObject> >& get_name_to_objects() const;
+
+    const std::unordered_map <std::string, std::list<std::string> >& get_name_to_values() const;
+
+    const std::unordered_map <std::string, std::string>& get_name_to_value() const;
+
+    // CONTAINS && EMPTIES
+    bool is_in_values(std::string& key) const;
+
+    bool is_in_objects(std::string& key) const;
+
+    bool is_in_val_lists(std::string& key) const;
+
+    bool is_in_obj_lists(std::string& key) const;
+
+    bool empty_values() const;
+
+    bool empty_objects() const;
+
+    bool empty_val_lists() const;
+
+    bool empty_obj_lists() const;
+
+    bool empty() const;
+
+    // INSERTS/OVERWRITES
+    void set_value(std::string& key, std::string& value);
+
+    void set_value(std::string& source);
+    
+    void set_object(std::string& key, JSONObject& obj);
+
+    void set_object(std::string& source);
+    
+    void set_obj_list(std::string& key, std::list<JSONObject>& list);
+
+    void set_obj_list(std::string& source);
+
+    void set_val_list(std::string& key, std::list<std::string>& list);
+
+    void set_val_list(std::string& source);
+
+    // ERASALS && CLEANS
+    void erase_value(std::string& key);
+
+    void erase_object(std::string& key);
+
+    void erase_val_list(std::string& key);
+
+    void erase_obj_list(std::string& key);
+
+    void clear_values();
+
+    void clear_objects();
+
+    void clear_val_lists();
+
+    void clear_obj_lists();
+
+    void clear();
+
+    // READ && WRITE
+    void read(std::string& path);
+
+    void read_as_field(std::string& path);
+
+    void read_and_overwrite(std::string& path);
+
+    void read_as_binary(std::string& path);
+
+    void write(std::string& file_name, std::string& dir);
+
+    void write_as_bin(std::string& file_name, std::string& dir);
+
+    // FORMATTING
+    std::string format(std::string value);
+
+    std::string to_string(int tabs);
 };
-
-
-
-
 
 #endif // JSON_H
