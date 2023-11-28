@@ -29,25 +29,25 @@ public:
     // CONSTRUCTORS
     JSONObject(std::string& source);
 
-    JSONObject(std::string& source, int& begin);
+    JSONObject(std::string& source, size_t& begin);
 
     // PROCESSING
-    static std::string pick_val(std::string& source, int& begin);
+    static std::string pick_val(std::string& source, size_t& begin);
 
-    static std::list<std::string> pick_val_list(std::string& source, int& begin);
+    static std::list<std::string> pick_val_list(std::string& source, size_t& begin);
 
-    static std::list<JSONObject> pick_obj_list(std::string& source, int& begin);
+    static std::list<JSONObject> pick_obj_list(std::string& source, size_t& begin);
 
-    static bool has_next_key(std::string& source, int& begin);
+    static bool has_next_key(std::string& source, size_t& begin);
 
     // FIELD ACCESS
-    std::string& get_value(std::string& key);
+    std::string& get_value(std::string key);
 
-    JSONObject& get_object(std::string& key);
+    JSONObject& get_object(std::string key);
 
-    std::list<JSONObject>& get_obj_list(std::string& key);
+    std::list<JSONObject>& get_obj_list(std::string key);
 
-    std::list<std::string>& get_val_list(std::string& key);
+    std::list<std::string>& get_val_list(std::string key);
 
     // CONTAINERS ACCESS
     const std::unordered_map <std::string, JSONObject>& get_name_to_object() const;
@@ -59,13 +59,13 @@ public:
     const std::unordered_map <std::string, std::string>& get_name_to_value() const;
 
     // CONTAINS && EMPTIES
-    bool is_in_values(std::string& key) const;
+    bool is_in_values(std::string key) const;
 
-    bool is_in_objects(std::string& key) const;
+    bool is_in_objects(std::string key) const;
 
-    bool is_in_val_lists(std::string& key) const;
+    bool is_in_val_lists(std::string key) const;
 
-    bool is_in_obj_lists(std::string& key) const;
+    bool is_in_obj_lists(std::string key) const;
 
     bool empty_values() const;
 
@@ -78,30 +78,30 @@ public:
     bool empty() const;
 
     // INSERTS/OVERWRITES
-    void set_value(std::string& key, std::string& value);
+    void set_value(std::string key, std::string& value);
 
     void set_value(std::string& source);
-    
-    void set_object(std::string& key, JSONObject& obj);
+
+    void set_object(std::string key, JSONObject& obj);
 
     void set_object(std::string& source);
-    
-    void set_obj_list(std::string& key, std::list<JSONObject>& list);
+
+    void set_obj_list(std::string key, std::list<JSONObject>& list);
 
     void set_obj_list(std::string& source);
 
-    void set_val_list(std::string& key, std::list<std::string>& list);
+    void set_val_list(std::string key, std::list<std::string>& list);
 
     void set_val_list(std::string& source);
 
     // ERASALS && CLEANS
-    void erase_value(std::string& key);
+    void erase_value(std::string key);
 
-    void erase_object(std::string& key);
+    void erase_object(std::string key);
 
-    void erase_val_list(std::string& key);
+    void erase_val_list(std::string key);
 
-    void erase_obj_list(std::string& key);
+    void erase_obj_list(std::string key);
 
     void clear_values();
 
