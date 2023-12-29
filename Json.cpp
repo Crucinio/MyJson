@@ -4,7 +4,7 @@
 #include<stdexcept>
 #include<fstream>
 
-enum expecting { key, value, object, array, object_array, unidentified, unidentified_array };
+enum expecting { key, value, number, object, array, object_array, number_array, boolean_array, unidentified, unidentified_array };
 
 JSONObject::JSONObject(std::string& source) // ???
 {
@@ -15,15 +15,28 @@ JSONObject::JSONObject(std::string& source) // ???
     std::string k;
     expecting current = key;
     while (has_next_key(source, ++begin)) {
-
+        
         // pick the key
         k = pick_val(source, begin);
         begin++;
 
-        // identify target field using control symbols \", { or [
+        // identify target field using control symbols \", {, [ or T&F
         for (; begin < source.size(); begin++) {
             if (source[begin] == '\"')
                 current = value;
+            else if (source[begin] == 'T' && source.size() - begin - 3 > 0 && source.substr(begin, 4) == "True") {
+                current = key;
+                this->key_to_bool[k] = true;
+                begin += 3;
+            }
+            else if (source[begin] == 'F' && source.size() - begin - 4 > 0 && source.substr(begin, 5) == "False") {
+                current = key;
+                this->key_to_bool[k] = false;
+                begin += 4;
+            }
+            else if ((source[begin] >= '0' && source[begin] <= '9') || (source[begin] == '-' && source.size() - 1 > begin && source[begin + 1] >= '0' && source[begin + 1] <= '9')) {
+                current = number;
+            }
             else if (source[begin] == '{')
                 current = object;
             else if (source[begin] == '[')
@@ -37,40 +50,36 @@ JSONObject::JSONObject(std::string& source) // ???
             break;
         }
 
-        // if the target is an array, determine the type of the array using control symbols \", {
+        // if the target is an array, determine the type of the array using control symbols \", {, T&F
         if (current == unidentified_array) {
-            size_t pos_obj = source.find_first_of('{', begin);
-            size_t pos_val = source.find_first_of('\"', begin);
-            size_t pos_ctrl = source.find_first_of(']', begin);
-            if (pos_ctrl == -1)
-                throw new std::invalid_argument("Key " + k + "corresponds to invalid array");
-
-            if (pos_ctrl < pos_val && pos_ctrl < pos_obj)
-                current = array;
-            else {
-                bool v = pos_val != -1;
-                bool o = pos_obj != -1;
-                if (!v && !o)
-                    return;
-
-                if (pos_obj < pos_val) {
-                    if (o) {
-                        current = object_array;
-                    }
-                    else if (v) {
-                        current = array;
-                    }
-                }
-                else if (v)
+            size_t tmp = begin;
+            for (; tmp < source.size(); tmp++) {
+                if (source[tmp] == '\"' || source[tmp] == ']')
                     current = array;
-                else
+                else if ((source[tmp] == 'T' && source.size() - tmp - 3 > 0 && source.substr(tmp, 4) == "True")
+                    || (source[tmp] == 'F' && source.size() - tmp - 4 > 0 && source.substr(tmp, 5) == "False")) {
+                    current = boolean_array;
+                }
+                else if (source[tmp] == '{')
                     current = object_array;
+                else if ((source[tmp] == '-' && source[tmp + 1] >= '0' && source[tmp + 1] <= '9') || (source[tmp] >= '0' && source[tmp] <= '9'))
+                    current = number_array;
+                else
+                    continue;
+
+                if (tmp == source.size())
+                    throw new std::invalid_argument("Array is not closed! Key = " + k);
+
+                break;
             }
         }
 
         // after identifying the target, pick it and insert/rewrite
         if (current == value) {
             this->key_to_value[k] = pick_val(source, begin);
+        }
+        else if (current == number) {
+            this->key_to_num[k] = pick_num(source, begin);
         }
         else if (current == object) {
             JSONObject tmp(source, begin);
@@ -83,6 +92,14 @@ JSONObject::JSONObject(std::string& source) // ???
         else if (current == object_array) {
             std::list<JSONObject> tmp = pick_obj_list(source, begin);
             this->key_to_object_list[k] = tmp;
+        }
+        else if (current == number_array) {
+            std::list<long long> tmp = pick_num_list(source, begin);
+            this->key_to_num_list[k] = tmp;
+        }
+        else if (current == boolean_array) {
+            std::list<bool> tmp = pick_bool_list(source, begin);
+            this->key_to_boolean_list[k] = tmp;
         }
     }
 }
@@ -237,6 +254,33 @@ std::string JSONObject::pick_val(std::string& source, size_t& begin) // (OK)
     return res;
 }
 
+long long JSONObject::pick_num(std::string& source, size_t& begin)
+{
+    long long num = 1;
+    if (source[begin] == '-') {
+        if (begin < source.size() - 1 && source[begin + 1] >= '0' && source[begin + 1] <= '9') {
+            num *= -1;
+            begin++;
+        }
+        else
+            throw new std::invalid_argument("invalid number at " + std::to_string(begin));
+    }
+
+    num *= source[begin] - '0';
+    begin++;
+
+    while (begin < source.size() && source[begin] == '0')
+        begin++;
+
+    while (source[begin] >= '0' && source[begin] <= '9') {
+        begin++;
+        num *= 10;
+        num += source[begin] - '0';
+    }
+
+    return num;
+}
+
 std::list<std::string> JSONObject::pick_val_list(std::string& source, size_t& begin)
 {
     begin = source.find_first_of('[', begin);
@@ -294,8 +338,92 @@ std::list<JSONObject> JSONObject::pick_obj_list(std::string& source, size_t& beg
     return tmp;
 }
 
+std::list<bool> JSONObject::pick_bool_list(std::string& source, size_t& begin)
+{
+    begin = source.find_first_of('[', begin);
+    if (begin == -1)
+        throw new std::invalid_argument("source");
+
+    size_t end = find_block_end_array(source, begin);
+    if (end == -1)
+        throw new std::invalid_argument("source");
+
+    std::list<bool> bools;
+    while (begin < end)
+    {
+        if (source[begin] == 'T' && source.size() - begin - 3 > 0 && source.substr(begin, 4) == "True") {
+            bools.push_back(true);
+            begin += 3;
+        }
+        else if (source[begin] == 'F' && source.size() - begin - 4 > 0 && source.substr(begin, 5) == "False") {
+            bools.push_back(false);
+            begin += 4;
+        }
+        
+        begin++;
+    }
+
+    return bools;
+}
+
+std::list<long long> JSONObject::pick_num_list(std::string& source, size_t& begin)
+{
+    begin = source.find_first_of('[', begin);
+    if (begin == -1)
+        throw new std::invalid_argument("source");
+
+    size_t end = find_block_end_array(source, begin);
+    if (end == -1)
+        throw new std::invalid_argument("source");
+
+    ++begin;
+
+    std::list<long long> nums;
+    while (begin < end)
+    {
+        if ((source[begin] >= '0' && source[begin] <= '9') || source[begin] == '-') {
+            long long num = 1;
+            if (source[begin] == '-') {
+                if (begin < source.size() - 1 && source[begin + 1] >= '0' && source[begin + 1] <= '9') {
+                    num *= -1;
+                    begin++;
+                }
+                else
+                    throw new std::invalid_argument("invalid number at " + std::to_string(begin));
+            }
+
+            num *= source[begin] - '0';
+            begin++;
+
+            while (begin < source.size() && source[begin] == '0')
+                begin++;
+
+            while (begin < end && source[begin] >= '0' && source[begin] <= '9') {
+                begin++;
+
+                num *= 10;
+                num += source[begin] - '0';
+            }
+        }
+        else if (source[begin] == ' ' || source[begin] == ':' || source[begin] == ';' || source[begin] == ',') {
+            begin++;
+            continue;
+        }
+        else if (source[begin] == ']')
+            return nums;
+        else
+            throw new std::invalid_argument("invalid array at " + std::to_string(begin));
+
+        begin++;
+    }
+
+    return nums;
+}
+
 bool JSONObject::has_next_key(std::string& source, size_t& pos)
 {
+    if (pos == source.size())
+        return false;
     size_t end = source.find_first_of('}', pos);
     if (end == -1)
         throw new std::invalid_argument("Source file does not contain closing bracket for current object. Latest position = " + std::to_string(pos));
@@ -336,9 +464,29 @@ std::list<std::string>& JSONObject::get_val_list(std::string key)
     return key_to_value_list.at(key);
 }
 
+std::list<bool>& JSONObject::get_bool_list(std::string key)
+{
+    return key_to_boolean_list.at(key);
+}
+
+std::list<long long>& JSONObject::get_num_list(std::string key)
+{
+    return key_to_num_list.at(key);
+}
+
 std::string& JSONObject::get_value(std::string key)
 {
     return key_to_value.at(key);
+}
+
+bool JSONObject::get_bool(std::string key)
+{
+    return key_to_bool.at(key);
+}
+
+long long JSONObject::get_num(std::string key)
+{
+    return key_to_num.at(key);
 }
 
 const std::unordered_map<std::string, JSONObject>& JSONObject::get_name_to_object() const

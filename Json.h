@@ -10,15 +10,19 @@ class JSONObject
 private:
     std::unordered_map <std::string, std::string> key_to_value;
 
-    std::unordered_map <std::string, std::string> key_to_int;
+    std::unordered_map <std::string, long long> key_to_num;
 
-    std::unordered_map <std::string, std::string> key_to_bool;
+    std::unordered_map <std::string, bool> key_to_bool;
 
     std::unordered_map <std::string, JSONObject> key_to_object;
 
     std::unordered_map <std::string, std::list<JSONObject> > key_to_object_list;
 
     std::unordered_map <std::string, std::list<std::string> > key_to_value_list;
+
+    std::unordered_map <std::string, std::list<bool> > key_to_boolean_list;
+
+    std::unordered_map <std::string, std::list<long long> > key_to_num_list;
 
     static int find_block_end_array(const std::string&, int); // this guy is almost useless...
 public:
@@ -34,20 +38,34 @@ public:
     // PROCESSING
     static std::string pick_val(std::string& source, size_t& begin);
 
+    static long long pick_num(std::string& source, size_t& begin);
+
     static std::list<std::string> pick_val_list(std::string& source, size_t& begin);
 
     static std::list<JSONObject> pick_obj_list(std::string& source, size_t& begin);
+    
+    static std::list<bool> pick_bool_list(std::string& source, size_t& begin);
+
+    static std::list<long long> pick_num_list(std::string& source, size_t& begin);
 
     static bool has_next_key(std::string& source, size_t& begin);
 
     // FIELD ACCESS
     std::string& get_value(std::string key);
 
+    bool get_bool(std::string key);
+
+    long long get_num(std::string key);
+
     JSONObject& get_object(std::string key);
 
     std::list<JSONObject>& get_obj_list(std::string key);
 
     std::list<std::string>& get_val_list(std::string key);
+
+    std::list<bool>& get_bool_list(std::string key);
+
+    std::list<long long>& get_num_list(std::string key);
 
     // CONTAINERS ACCESS
     const std::unordered_map <std::string, JSONObject>& get_name_to_object() const;
