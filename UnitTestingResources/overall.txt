@@ -75,7 +75,7 @@
         "fileTransferFolder": "/usr/local/tomcat/webapps/content/fileTransferFolder",
         "lookInContext": 1,
         "adminGroupID": 4,
-        "betaServer": true}}],
+        "betaServer": true}}       ],
   "servlet-mapping": {
     "cofaxCDS": "/",
     "cofaxEmail": "/cofaxutil/aemail/*",

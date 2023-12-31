@@ -24,12 +24,12 @@ JSONObject::JSONObject(std::string& source) // ???
         for (; begin < source.size(); begin++) {
             if (source[begin] == '\"')
                 current = value;
-            else if (source[begin] == 'T' && source.size() - begin - 3 > 0 && source.substr(begin, 4) == "True") {
+            else if (source[begin] == 't' && source.size() - begin - 3 > 0 && source.substr(begin, 4) == "true") {
                 current = key;
                 this->key_to_bool[k] = true;
                 begin += 3;
             }
-            else if (source[begin] == 'F' && source.size() - begin - 4 > 0 && source.substr(begin, 5) == "False") {
+            else if (source[begin] == 'f' && source.size() - begin - 4 > 0 && source.substr(begin, 5) == "false") {
                 current = key;
                 this->key_to_bool[k] = false;
                 begin += 4;
@@ -56,8 +56,8 @@ JSONObject::JSONObject(std::string& source) // ???
             for (; tmp < source.size(); tmp++) {
                 if (source[tmp] == '\"' || source[tmp] == ']')
                     current = array;
-                else if ((source[tmp] == 'T' && source.size() - tmp - 3 > 0 && source.substr(tmp, 4) == "True")
-                    || (source[tmp] == 'F' && source.size() - tmp - 4 > 0 && source.substr(tmp, 5) == "False")) {
+                else if ((source[tmp] == 't' && source.size() - tmp - 3 > 0 && source.substr(tmp, 4) == "true")
+                    || (source[tmp] == 'f' && source.size() - tmp - 4 > 0 && source.substr(tmp, 5) == "false")) {
                     current = boolean_array;
                 }
                 else if (source[tmp] == '{')
@@ -122,6 +122,19 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
         for (; begin < source.size(); begin++) {
             if (source[begin] == '\"')
                 current = value;
+            else if (source[begin] == 't' && source.size() - begin - 3 > 0 && source.substr(begin, 4) == "true") {
+                current = key;
+                this->key_to_bool[k] = true;
+                begin += 3;
+            }
+            else if (source[begin] == 'f' && source.size() - begin - 4 > 0 && source.substr(begin, 5) == "false") {
+                current = key;
+                this->key_to_bool[k] = false;
+                begin += 4;
+            }
+            else if ((source[begin] >= '0' && source[begin] <= '9') || (source[begin] == '-' && source.size() - 1 > begin && source[begin + 1] >= '0' && source[begin + 1] <= '9')) {
+                current = number;
+            }
             else if (source[begin] == '{')
                 current = object;
             else if (source[begin] == '[')
@@ -130,45 +143,41 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
                 continue;
 
             if (begin == source.size())
-                return;
+                throw new std::invalid_argument("Key does not correspond to anything! Key = " + k);
 
             break;
         }
 
-        // if the target is an array, determine the type of the array using control symbols \", {
+        // if the target is an array, determine the type of the array using control symbols \", {, T&F
         if (current == unidentified_array) {
-            size_t pos_obj = source.find_first_of('{', begin);
-            size_t pos_val = source.find_first_of('\"', begin);
-            size_t pos_ctrl = source.find_first_of(']', begin);
-            if (pos_ctrl == -1)
-                throw new std::invalid_argument("Key " + k + " corresponds to invalid array");
-
-            if (pos_ctrl < pos_val && pos_ctrl < pos_obj)
-                current = array;
-            else {
-                bool v = pos_val != -1;
-                bool o = pos_obj != -1;
-                if (!v && !o)
-                    return;
-
-                if (pos_obj < pos_val) {
-                    if (o) {
-                        current = object_array;
-                    }
-                    else if (v) {
-                        current = array;
-                    }
-                }
-                else if (v)
+            size_t tmp = begin;
+            for (; tmp < source.size(); tmp++) {
+                if (source[tmp] == '\"' || source[tmp] == ']')
                     current = array;
-                else
+                else if ((source[tmp] == 't' && source.size() - tmp - 3 > 0 && source.substr(tmp, 4) == "true")
+                    || (source[tmp] == 'f' && source.size() - tmp - 4 > 0 && source.substr(tmp, 5) == "false")) {
+                    current = boolean_array;
+                }
+                else if (source[tmp] == '{')
                     current = object_array;
+                else if ((source[tmp] == '-' && source[tmp + 1] >= '0' && source[tmp + 1] <= '9') || (source[tmp] >= '0' && source[tmp] <= '9'))
+                    current = number_array;
+                else
+                    continue;
+
+                if (tmp == source.size())
+                    throw new std::invalid_argument("Array is not closed! Key = " + k);
+
+                break;
             }
         }
 
         // after identifying the target, pick it and insert/rewrite
         if (current == value) {
             this->key_to_value[k] = pick_val(source, begin);
+        }
+        else if (current == number) {
+            this->key_to_num[k] = pick_num(source, begin);
         }
         else if (current == object) {
             JSONObject tmp(source, begin);
@@ -181,6 +190,14 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
         else if (current == object_array) {
             std::list<JSONObject> tmp = pick_obj_list(source, begin);
             this->key_to_object_list[k] = tmp;
+        }
+        else if (current == number_array) {
+            std::list<long long> tmp = pick_num_list(source, begin);
+            this->key_to_num_list[k] = tmp;
+        }
+        else if (current == boolean_array) {
+            std::list<bool> tmp = pick_bool_list(source, begin);
+            this->key_to_boolean_list[k] = tmp;
         }
     }
 }
@@ -316,8 +333,6 @@ std::list<JSONObject> JSONObject::pick_obj_list(std::string& source, size_t& beg
         return tmp;
     }
 
-    //std::string source = "{\"TestObjects\"[{    }     {}{\"key\"\"val\"}{}    {}{\"objs\"[{}{}]}]}";
-
     while (pos1 != -1) {
 
         JSONObject obj(source, pos1);
@@ -351,11 +366,11 @@ std::list<bool> JSONObject::pick_bool_list(std::string& source, size_t& begin)
     std::list<bool> bools;
     while (begin < end)
     {
-        if (source[begin] == 'T' && source.size() - begin - 3 > 0 && source.substr(begin, 4) == "True") {
+        if (source[begin] == 't' && source.size() - begin - 3 > 0 && source.substr(begin, 4) == "true") {
             bools.push_back(true);
             begin += 3;
         }
-        else if (source[begin] == 'F' && source.size() - begin - 4 > 0 && source.substr(begin, 5) == "False") {
+        else if (source[begin] == 'f' && source.size() - begin - 4 > 0 && source.substr(begin, 5) == "false") {
             bools.push_back(false);
             begin += 4;
         }
@@ -504,9 +519,29 @@ const std::unordered_map<std::string, std::list<std::string> >& JSONObject::get_
     return key_to_value_list;
 }
 
+const std::unordered_map<std::string, std::list<long long>>& JSONObject::get_name_to_nums() const
+{
+    return key_to_num_list;
+}
+
+const std::unordered_map<std::string, std::list<bool>>& JSONObject::get_name_to_bools() const
+{
+    return key_to_boolean_list;
+}
+
 const std::unordered_map<std::string, std::string>& JSONObject::get_name_to_value() const
 {
     return key_to_value;
+}
+
+const std::unordered_map<std::string, long long>& JSONObject::get_name_to_num() const
+{
+    return key_to_num;
+}
+
+const std::unordered_map<std::string, bool>& JSONObject::get_name_to_bool() const
+{
+    return key_to_bool;
 }
 
 bool JSONObject::is_in_values(std::string key) const
@@ -520,6 +555,22 @@ bool JSONObject::is_in_values(std::string key) const
 bool JSONObject::is_in_objects(std::string key) const
 {
     if (key_to_object.find(key) == key_to_object.end())
+        return false;
+
+    return true;
+}
+
+bool JSONObject::is_in_bools(std::string key) const
+{
+    if (key_to_bool.find(key) == key_to_bool.end())
+        return false;
+
+    return true;
+}
+
+bool JSONObject::is_in_nums(std::string key) const
+{
+    if (key_to_num.find(key) == key_to_num.end())
         return false;
 
     return true;
@@ -541,24 +592,60 @@ bool JSONObject::is_in_obj_lists(std::string key) const
     return true;
 }
 
+bool JSONObject::is_in_bool_lists(std::string key) const
+{
+    if (key_to_boolean_list.find(key) == key_to_boolean_list.end())
+        return false;
+
+    return true;
+}
+
+bool JSONObject::is_in_num_lists(std::string key) const
+{
+    if (key_to_num_list.find(key) == key_to_num_list.end())
+        return false;
+
+    return true;
+}
+
 bool JSONObject::empty_values() const
 {
-    return key_to_value.size() == 0;
+    return key_to_value.empty();
 }
 
 bool JSONObject::empty_objects() const
 {
-    return key_to_object.size() == 0;
+    return key_to_object.empty();
+}
+
+bool JSONObject::empty_nums() const
+{
+    return key_to_num.empty();
+}
+
+bool JSONObject::empty_bools() const
+{
+    return key_to_bool.empty();
 }
 
 bool JSONObject::empty_val_lists() const
 {
-    return key_to_value_list.size() == 0;
+    return key_to_value_list.empty();
 }
 
 bool JSONObject::empty_obj_lists() const
 {
-    return key_to_object_list.size() == 0;
+    return key_to_object_list.empty();
+}
+
+bool JSONObject::empty_num_lists() const
+{
+    return key_to_num_list.empty();
+}
+
+bool JSONObject::empty_bool_lists() const
+{
+    return key_to_boolean_list.empty();
 }
 
 bool JSONObject::empty() const
@@ -569,7 +656,7 @@ bool JSONObject::empty() const
         key_to_object_list.size() == 0;
 }
 
-void JSONObject::set_value(std::string key, std::string& value)
+void JSONObject::set_value(std::string key, std::string value)
 {
     key_to_value[key] = value;
 }
@@ -583,8 +670,19 @@ void JSONObject::set_value(std::string& source)
     key_to_value[key] = value;
 }
 
-void JSONObject::set_object(std::string key, JSONObject& obj)
+void JSONObject::set_bool(std::string key, bool value)
 {
+    key_to_bool[key] = value;
+}
+
+void JSONObject::set_num(std::string key, long long value)
+{
+    key_to_num[key] = value;
+}
+
+void JSONObject::set_object(std::string key, JSONObject obj)
+{
+    key_to_object[key].clear();
     key_to_object[key] = obj;
 }
 
@@ -592,34 +690,65 @@ void JSONObject::set_object(std::string& source)
 {
     size_t start = 0;
     std::string key = pick_val(source, start);
-    JSONObject val(source, ++start);
-    key_to_object[key] = val;
+    key_to_object[key].clear();
+    key_to_object[key] = JSONObject(source, ++start);
 }
 
-void JSONObject::set_obj_list(std::string key, std::list<JSONObject>& list)
+void JSONObject::set_obj_list(std::string key, std::list<JSONObject> list)
 {
-    key_to_object_list[key] = list;
+    key_to_object_list[key].clear();
+    for (auto i : list)
+        key_to_object_list[key].push_back(i);
 }
 
 void JSONObject::set_obj_list(std::string& source)
 {
     size_t start = 0;
     std::string key = pick_val(source, start);
-    std::list<JSONObject> val = pick_obj_list(source, ++start);
-    key_to_object_list[key] = val;
+    key_to_object_list[key].clear();
+    key_to_object_list[key] = pick_obj_list(source, ++start);
 }
 
-void JSONObject::set_val_list(std::string key, std::list<std::string>& list)
+void JSONObject::set_val_list(std::string key, std::list<std::string> list)
 {
-    key_to_value_list[key] = list;
+    key_to_value_list[key].clear();
+    for (auto i : list)
+        key_to_value_list[key].push_back(i);
 }
 
 void JSONObject::set_val_list(std::string& source)
 {
     size_t start = 0;
     std::string key = pick_val(source, start);
-    std::list<std::string> val = pick_val_list(source, ++start);
-    key_to_value_list[key] = val;
+    key_to_value_list[key] = pick_val_list(source, ++start);
+}
+
+void JSONObject::set_bool_list(std::string key, std::list<bool> list)
+{
+    key_to_boolean_list[key].clear();
+    for (auto i : list)
+        key_to_boolean_list[key].push_back(i);
+}
+
+void JSONObject::set_bool_list(std::string& source)
+{
+    size_t start = 0;
+    std::string key = pick_val(source, start);
+    key_to_boolean_list[key] =  pick_bool_list(source, ++start);
+}
+
+void JSONObject::set_num_list(std::string key, std::list<long long> list)
+{
+    key_to_num_list[key].clear();
+    for (auto i : list)
+        key_to_num_list[key].push_back(i);
+}
+
+void JSONObject::set_num_list(std::string& source)
+{
+    size_t start = 0;
+    std::string key = pick_val(source, start);
+    key_to_num_list[key] = pick_num_list(source, ++start);
 }
 
 void JSONObject::erase_value(std::string key)
@@ -632,6 +761,16 @@ void JSONObject::erase_object(std::string key)
     key_to_object.erase(key);
 }
 
+void JSONObject::erase_num(std::string key)
+{
+    key_to_num.erase(key);
+}
+
+void JSONObject::erase_bool(std::string key)
+{
+    key_to_bool.erase(key);
+}
+
 void JSONObject::erase_val_list(std::string key)
 {
     key_to_value_list.erase(key);
@@ -640,6 +779,26 @@ void JSONObject::erase_val_list(std::string key)
 void JSONObject::erase_obj_list(std::string key)
 {
     key_to_object_list.erase(key);
+}
+
+void JSONObject::erase_bool_list(std::string key)
+{
+    key_to_boolean_list.erase(key);
+}
+
+void JSONObject::erase_num_list(std::string key)
+{
+    key_to_num_list.erase(key);
+}
+
+void JSONObject::clear_bools()
+{
+    key_to_bool.clear();
+}
+
+void JSONObject::clear_nums()
+{
+    key_to_num.clear();
 }
 
 void JSONObject::clear_values()
@@ -662,15 +821,29 @@ void JSONObject::clear_obj_lists()
     key_to_object_list.clear();
 }
 
+void JSONObject::clear_num_lists()
+{
+    key_to_num_list.clear();
+}
+
+void JSONObject::clear_bool_lists()
+{
+    key_to_boolean_list.clear();
+}
+
 void JSONObject::clear()
 {
+    key_to_bool.clear();
+    key_to_num.clear();
     key_to_value.clear();
     key_to_object.clear();
     key_to_value_list.clear();
     key_to_object_list.clear();
+    key_to_boolean_list.clear();
+    key_to_num_list.clear();
 }
 
-void JSONObject::read(std::string& path)
+void JSONObject::read(std::string path)
 {
     std::ifstream in(path);
     if (!in.is_open())
@@ -688,7 +861,7 @@ void JSONObject::read(std::string& path)
     key_to_object_list = tmp.get_name_to_objects();
 }
 
-void JSONObject::read_as_field(std::string& path)
+void JSONObject::read_as_field(std::string path)
 {
     std::ifstream in(path);
     if (!in.is_open())
@@ -705,7 +878,7 @@ void JSONObject::read_as_field(std::string& path)
     key_to_object[key] = tmp;
 }
 
-void JSONObject::read_and_overwrite(std::string& path)
+void JSONObject::read_and_overwrite(std::string path)
 {
     std::ifstream in(path);
     if (!in.is_open())

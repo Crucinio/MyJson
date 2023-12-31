@@ -28,6 +28,7 @@ private:
 public:
 
     ~JSONObject() = default;
+
     JSONObject() = default;
 
     // CONSTRUCTORS
@@ -74,52 +75,100 @@ public:
 
     const std::unordered_map <std::string, std::list<std::string> >& get_name_to_values() const;
 
+    const std::unordered_map <std::string, std::list<long long> >& get_name_to_nums() const;
+
+    const std::unordered_map <std::string, std::list<bool> >& get_name_to_bools() const;
+
     const std::unordered_map <std::string, std::string>& get_name_to_value() const;
+
+    const std::unordered_map <std::string, long long>& get_name_to_num() const;
+
+    const std::unordered_map <std::string, bool>& get_name_to_bool() const;
 
     // CONTAINS && EMPTIES
     bool is_in_values(std::string key) const;
 
     bool is_in_objects(std::string key) const;
 
+    bool is_in_bools(std::string key) const;
+
+    bool is_in_nums(std::string key) const;
+
     bool is_in_val_lists(std::string key) const;
 
     bool is_in_obj_lists(std::string key) const;
+
+    bool is_in_bool_lists(std::string key) const;
+
+    bool is_in_num_lists(std::string key) const;
 
     bool empty_values() const;
 
     bool empty_objects() const;
 
+    bool empty_nums() const;
+
+    bool empty_bools() const;
+
     bool empty_val_lists() const;
 
     bool empty_obj_lists() const;
 
+    bool empty_num_lists() const;
+
+    bool empty_bool_lists() const;
+
     bool empty() const;
 
     // INSERTS/OVERWRITES
-    void set_value(std::string key, std::string& value);
+    void set_value(std::string key, std::string value);
 
     void set_value(std::string& source);
 
-    void set_object(std::string key, JSONObject& obj);
+    void set_bool(std::string key, bool value);
+
+    void set_num(std::string key, long long value);
+
+    void set_object(std::string key, JSONObject obj);
 
     void set_object(std::string& source);
 
-    void set_obj_list(std::string key, std::list<JSONObject>& list);
+    void set_obj_list(std::string key, std::list<JSONObject> list);
 
     void set_obj_list(std::string& source);
 
-    void set_val_list(std::string key, std::list<std::string>& list);
+    void set_val_list(std::string key, std::list<std::string> list);
 
     void set_val_list(std::string& source);
+
+    void set_bool_list(std::string key, std::list<bool> list);
+
+    void set_bool_list(std::string& source);
+
+    void set_num_list(std::string key, std::list<long long> list);
+
+    void set_num_list(std::string& source);
 
     // ERASALS && CLEANS
     void erase_value(std::string key);
 
     void erase_object(std::string key);
 
+    void erase_num(std::string key);
+
+    void erase_bool(std::string key);
+
     void erase_val_list(std::string key);
 
     void erase_obj_list(std::string key);
+
+    void erase_bool_list(std::string key);
+
+    void erase_num_list(std::string key);
+
+    void clear_bools();
+
+    void clear_nums();
 
     void clear_values();
 
@@ -129,20 +178,24 @@ public:
 
     void clear_obj_lists();
 
+    void clear_num_lists();
+
+    void clear_bool_lists();
+
     void clear();
 
     // READ && WRITE
-    void read(std::string& path);
+    void read(std::string path);
 
-    void read_as_field(std::string& path);
+    void read_as_field(std::string path);
 
-    void read_and_overwrite(std::string& path);
+    void read_and_overwrite(std::string path);
 
-    void read_as_binary(std::string& path);
+    //void read_as_binary(std::string path);
 
-    void write(std::string& file_name, std::string& dir);
+    //void write(std::string file_name, std::string dir);
 
-    void write_as_bin(std::string& file_name, std::string& dir);
+    //void write_as_bin(std::string file_name, std::string dir);
 
     // FORMATTING
     std::string format(std::string value);
