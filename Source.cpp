@@ -15,8 +15,7 @@ int main()
 		test += line;
 	}
 	in.close();
-	JSONObject obj;
-	obj.read("UnitTestingResources/overall.txt");
-	JSONObject obj2 = obj;
+	JSONObject obj2 = JSONObject::read("UnitTestingResources/list_obj.txt");
+	std::cout << obj2.to_string(0);
 
 }

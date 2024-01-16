@@ -185,7 +185,7 @@ public:
     void clear();
 
     // READ && WRITE
-    void read(std::string path);
+    static JSONObject read(std::string path);
 
     void read_as_field(std::string path);
 

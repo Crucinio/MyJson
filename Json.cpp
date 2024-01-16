@@ -1,5 +1,6 @@
 
 #include "Json.h"
+
 #include<stack>
 #include<stdexcept>
 #include<fstream>
@@ -15,12 +16,9 @@ JSONObject::JSONObject(std::string& source) // ???
     std::string k;
     expecting current = key;
     while (has_next_key(source, ++begin)) {
-        
-        // pick the key
-        k = pick_val(source, begin);
+        k = pick_val(source, begin); // pick the key
         begin++;
 
-        // identify target field using control symbols \", {, [ or T&F
         for (; begin < source.size(); begin++) {
             if (source[begin] == '\"')
                 current = value;
@@ -48,9 +46,8 @@ JSONObject::JSONObject(std::string& source) // ???
                 throw new std::invalid_argument("Key does not correspond to anything! Key = " + k);
 
             break;
-        }
+        } // identify target field using control symbols \", {, [ or T&F
 
-        // if the target is an array, determine the type of the array using control symbols \", {, T&F
         if (current == unidentified_array) {
             size_t tmp = begin;
             for (; tmp < source.size(); tmp++) {
@@ -71,7 +68,7 @@ JSONObject::JSONObject(std::string& source) // ???
                     throw new std::invalid_argument("Array is not closed! Key = " + k);
 
                 break;
-            }
+            } // if the target is an array, determine the type of the array using control symbols \", {, T&F
         }
 
         // after identifying the target, pick it and insert/rewrite
@@ -100,7 +97,7 @@ JSONObject::JSONObject(std::string& source) // ???
         else if (current == boolean_array) {
             std::list<bool> tmp = pick_bool_list(source, begin);
             this->key_to_boolean_list[k] = tmp;
-        }
+        } 
     }
 }
 
@@ -113,12 +110,9 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
     std::string k;
     expecting current = key;
     while (has_next_key(source, ++begin)) {
-
-        // pick the key
-        k = pick_val(source, begin);
+        k = pick_val(source, begin); // pick the key
         begin++;
 
-        // identify target field using control symbols \", { or [
         for (; begin < source.size(); begin++) {
             if (source[begin] == '\"')
                 current = value;
@@ -146,9 +140,8 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
                 throw new std::invalid_argument("Key does not correspond to anything! Key = " + k);
 
             break;
-        }
+        } // identify target field using control symbols \", { or [
 
-        // if the target is an array, determine the type of the array using control symbols \", {, T&F
         if (current == unidentified_array) {
             size_t tmp = begin;
             for (; tmp < source.size(); tmp++) {
@@ -169,7 +162,7 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
                     throw new std::invalid_argument("Array is not closed! Key = " + k);
 
                 break;
-            }
+            } // if the target is an array, determine the type of the array using control symbols \", {, T&F
         }
 
         // after identifying the target, pick it and insert/rewrite
@@ -419,6 +412,8 @@ std::list<long long> JSONObject::pick_num_list(std::string& source, size_t& begi
                 num *= 10;
                 num += source[begin] - '0';
             }
+
+            nums.push_back(num);
         }
         else if (source[begin] == ' ' || source[begin] == ':' || source[begin] == ';' || source[begin] == ',') {
             begin++;
@@ -843,7 +838,7 @@ void JSONObject::clear()
     key_to_num_list.clear();
 }
 
-void JSONObject::read(std::string path)
+JSONObject JSONObject::read(std::string path)
 {
     std::ifstream in(path);
     if (!in.is_open())
@@ -854,11 +849,7 @@ void JSONObject::read(std::string path)
     while (std::getline(in, line))
         source += line;
 
-    JSONObject tmp(source);
-    key_to_value = tmp.get_name_to_value();
-    key_to_object = tmp.get_name_to_object();
-    key_to_value_list = tmp.get_name_to_values();
-    key_to_object_list = tmp.get_name_to_objects();
+    return JSONObject(source);
 }
 
 void JSONObject::read_as_field(std::string path)
@@ -934,39 +925,63 @@ std::string JSONObject::to_string(int tabs)
 {
     std::string spacing(tabs, '\t');
     std::string res = "{\n";
-    size_t counter = key_to_object.size() + key_to_value.size() + key_to_value_list.size() + key_to_object_list.size();
-    for (auto l : key_to_value) {
-        std::string key = spacing + '\t' + format(l.first);
-        std::string val = format(l.second);
-        res += key + ":" + val;
-        if (counter > 1)
-            res += ',';
 
-        res += '\n';
-        counter--;
+    for (auto& t : key_to_value) {
+        res += spacing + format(t.first) + " : " + format(t.second) + '\n';
     }
 
-    for (auto l : key_to_value_list) {
-        std::string key = spacing + '\t' + format(l.first);
-        res += key + " : [";
-        std::list<std::string>::iterator it = l.second.begin();
-        if (it != l.second.end())
-            res += format(*it);
+    for (auto& t : key_to_num) {
+        res += spacing + format(t.first) + " : " + std::to_string(t.second) + '\n';
+    }
 
-        it++;
-        while (it != l.second.end()) {
-            res += ", " + format(*it);
+    for (auto& t : key_to_bool) {
+        if (t.second)
+            res += spacing + format(t.first) + " : true\n";
+        else
+            res += spacing + format(t.first) + " : false\n";
+    }
+
+    for (auto& t : key_to_value_list) {
+        res += spacing + format(t.first) + " : [\n";
+        for (auto& inner : t.second) {
+            res += spacing + "\t" + format(inner) + "\n";
         }
 
-        counter--;
-        res += "]";
-        if (counter > 1)
-            res += ',';
-        res += '\n';
+        res += spacing + "\t]\n";
     }
 
-    for (auto l : key_to_object) {
+    for (auto& t : key_to_num_list) {
+        res += spacing + format(t.first) + " : [\n";
+        for (auto& inner : t.second) {
+            res += spacing + "\t" + std::to_string(inner) + "\n";
+        }
 
+        res += spacing + "\t]\n";
+    }
+
+    for (auto& t : key_to_boolean_list) {
+        res += spacing + format(t.first) + " : [\n";
+        for (auto& inner : t.second) {
+            if (inner)
+                res += spacing + "\ttrue\n";
+            else
+                res += spacing + "\tfalse\n";
+        }
+
+        res += spacing + "\t]\n";
+    }
+
+    for (auto& obj : key_to_object) {
+        res += spacing + format(obj.first) + " : " + obj.second.to_string(tabs + 1) + "\n";
+    }
+
+    for (auto& t : key_to_object_list) {
+        res += spacing + format(t.first) + " : [\n";
+        for (auto& obj : t.second) {
+            res += spacing + '\t' + obj.to_string(tabs + 1) + "\n";
+        }
+
+        res += "\t]\n";
     }
 
     res += spacing + "}";

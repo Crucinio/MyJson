@@ -25,5 +25,4 @@ The example above obviously contains unnecessary symbols, but still works fine d
 #### Currently working on
 - Writing in bin and txt files (write, rewrite);
 - Reading from bin files (read, reread));
-- to_string method;
 - documentation (since 31.12.2023);

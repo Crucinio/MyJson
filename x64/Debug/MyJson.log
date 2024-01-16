@@ -1,3 +1,6 @@
 ﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(534,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (JSON_tests.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-  Source.cpp
+  Json.cpp
+D:\PG\MyJson\MyJson\Json.cpp(300,52): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(355,52): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\PG\MyJson\MyJson\Json.cpp(383,52): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
   MyJson.vcxproj -> D:\PG\MyJson\MyJson\x64\Debug\MyJson.exe
