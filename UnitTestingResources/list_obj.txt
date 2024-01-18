@@ -1,5 +1,4 @@
-{"web-app": {
-  "servlet": [   
+{"servlet": [   
     {
       "servlet-name": "cofaxCDS",
       "servlet-class": "org.cofax.cds.CDSServlet",
@@ -45,8 +44,8 @@
         "dataStoreMaxConns": 100,
         "dataStoreConnUsageLimit": 100,
         "dataStoreLogLevel": "debug",
-        "maxUrlLength": 500}},
-    {
+        "maxUrlLength": 500 }  },
+    { 
       "servlet-name": "cofaxEmail",
       "servlet-class": "org.cofax.cds.EmailServlet",
       "init-param": {
@@ -75,14 +74,4 @@
         "fileTransferFolder": "/usr/local/tomcat/webapps/content/fileTransferFolder",
         "lookInContext": 1,
         "adminGroupID": 4,
-        "betaServer": true}}],
-  "servlet-mapping": {
-    "cofaxCDS": "/",
-    "cofaxEmail": "/cofaxutil/aemail/*",
-    "cofaxAdmin": "/admin/*",
-    "fileServlet": "/static/*",
-    "cofaxTools": "/tools/*"},
- 
-  "taglib": {
-    "taglib-uri": "cofax.tld",
-    "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
+        "betaServer": true}}]}

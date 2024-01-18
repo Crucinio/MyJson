@@ -10,7 +10,7 @@ class JSONObject
 private:
     std::unordered_map <std::string, std::string> key_to_value;
 
-    std::unordered_map <std::string, long long> key_to_num;
+    std::unordered_map <std::string, long double> key_to_num;
 
     std::unordered_map <std::string, bool> key_to_bool;
 
@@ -22,9 +22,9 @@ private:
 
     std::unordered_map <std::string, std::list<bool> > key_to_boolean_list;
 
-    std::unordered_map <std::string, std::list<long long> > key_to_num_list;
+    std::unordered_map <std::string, std::list<long double> > key_to_num_list;
 
-    static int find_block_end_array(const std::string&, int); // this guy is almost useless...
+    static int find_block_end_array(const std::string&, size_t); // this guy is almost useless...
 public:
 
     ~JSONObject() = default;
@@ -39,7 +39,7 @@ public:
     // PROCESSING
     static std::string pick_val(std::string& source, size_t& begin);
 
-    static long long pick_num(std::string& source, size_t& begin);
+    static long double pick_num(std::string& source, size_t& begin);
 
     static std::list<std::string> pick_val_list(std::string& source, size_t& begin);
 
@@ -47,16 +47,18 @@ public:
     
     static std::list<bool> pick_bool_list(std::string& source, size_t& begin);
 
-    static std::list<long long> pick_num_list(std::string& source, size_t& begin);
+    static std::list<long double> pick_num_list(std::string& source, size_t& begin);
 
     static bool has_next_key(std::string& source, size_t& begin);
+    
+    static bool tryParseLDouble(std::string num);
 
     // FIELD ACCESS
     std::string& get_value(std::string key);
 
     bool get_bool(std::string key);
 
-    long long get_num(std::string key);
+    long double get_num(std::string key);
 
     JSONObject& get_object(std::string key);
 
@@ -66,7 +68,7 @@ public:
 
     std::list<bool>& get_bool_list(std::string key);
 
-    std::list<long long>& get_num_list(std::string key);
+    std::list<long double>& get_num_list(std::string key);
 
     // CONTAINERS ACCESS
     const std::unordered_map <std::string, JSONObject>& get_name_to_object() const;
@@ -75,13 +77,13 @@ public:
 
     const std::unordered_map <std::string, std::list<std::string> >& get_name_to_values() const;
 
-    const std::unordered_map <std::string, std::list<long long> >& get_name_to_nums() const;
+    const std::unordered_map <std::string, std::list<long double> >& get_name_to_nums() const;
 
     const std::unordered_map <std::string, std::list<bool> >& get_name_to_bools() const;
 
     const std::unordered_map <std::string, std::string>& get_name_to_value() const;
 
-    const std::unordered_map <std::string, long long>& get_name_to_num() const;
+    const std::unordered_map <std::string, long double>& get_name_to_num() const;
 
     const std::unordered_map <std::string, bool>& get_name_to_bool() const;
 
@@ -127,7 +129,7 @@ public:
 
     void set_bool(std::string key, bool value);
 
-    void set_num(std::string key, long long value);
+    void set_num(std::string key, long double value);
 
     void set_object(std::string key, JSONObject obj);
 
@@ -145,7 +147,7 @@ public:
 
     void set_bool_list(std::string& source);
 
-    void set_num_list(std::string key, std::list<long long> list);
+    void set_num_list(std::string key, std::list<long double> list);
 
     void set_num_list(std::string& source);
 
@@ -193,7 +195,7 @@ public:
 
     //void read_as_binary(std::string path);
 
-    //void write(std::string file_name, std::string dir);
+    void write(std::string file_path);
 
     //void write_as_bin(std::string file_name, std::string dir);
 

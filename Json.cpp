@@ -1,4 +1,3 @@
-
 #include "Json.h"
 
 #include<stack>
@@ -91,7 +90,7 @@ JSONObject::JSONObject(std::string& source) // ???
             this->key_to_object_list[k] = tmp;
         }
         else if (current == number_array) {
-            std::list<long long> tmp = pick_num_list(source, begin);
+            std::list<long double> tmp = pick_num_list(source, begin);
             this->key_to_num_list[k] = tmp;
         }
         else if (current == boolean_array) {
@@ -140,7 +139,7 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
                 throw new std::invalid_argument("Key does not correspond to anything! Key = " + k);
 
             break;
-        } // identify target field using control symbols \", { or [
+        } // identify target field using control symbols \", {, [ or T&F
 
         if (current == unidentified_array) {
             size_t tmp = begin;
@@ -185,7 +184,7 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
             this->key_to_object_list[k] = tmp;
         }
         else if (current == number_array) {
-            std::list<long long> tmp = pick_num_list(source, begin);
+            std::list<long double> tmp = pick_num_list(source, begin);
             this->key_to_num_list[k] = tmp;
         }
         else if (current == boolean_array) {
@@ -195,7 +194,7 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
     }
 }
 
-int JSONObject::find_block_end_array(const std::string& source, int curpos)
+int JSONObject::find_block_end_array(const std::string& source, size_t curpos)
 {
     int pos = curpos + 1;
     bool counts = true;
@@ -264,31 +263,16 @@ std::string JSONObject::pick_val(std::string& source, size_t& begin) // (OK)
     return res;
 }
 
-long long JSONObject::pick_num(std::string& source, size_t& begin)
+long double JSONObject::pick_num(std::string& source, size_t& begin)
 {
-    long long num = 1;
-    if (source[begin] == '-') {
-        if (begin < source.size() - 1 && source[begin + 1] >= '0' && source[begin + 1] <= '9') {
-            num *= -1;
-            begin++;
-        }
-        else
-            throw new std::invalid_argument("invalid number at " + std::to_string(begin));
-    }
+    size_t start = source.find_first_not_of(" ,", begin);
+    size_t end = source.find_first_of(" ,}", start);
+    std::string num = source.substr(start, end - start);
+    if (!tryParseLDouble(num) || end == -1)
+        throw new std::invalid_argument("non-numeric");
 
-    num *= source[begin] - '0';
-    begin++;
-
-    while (begin < source.size() && source[begin] == '0')
-        begin++;
-
-    while (source[begin] >= '0' && source[begin] <= '9') {
-        begin++;
-        num *= 10;
-        num += source[begin] - '0';
-    }
-
-    return num;
+    begin = end - 1;
+    return std::stold(num);
 }
 
 std::list<std::string> JSONObject::pick_val_list(std::string& source, size_t& begin)
@@ -352,12 +336,12 @@ std::list<bool> JSONObject::pick_bool_list(std::string& source, size_t& begin)
     if (begin == -1)
         throw new std::invalid_argument("source");
 
-    size_t end = find_block_end_array(source, begin);
+    size_t end = source.find_first_of(']', begin);
     if (end == -1)
         throw new std::invalid_argument("source");
 
     std::list<bool> bools;
-    while (begin < end)
+    while (begin != end)
     {
         if (source[begin] == 't' && source.size() - begin - 3 > 0 && source.substr(begin, 4) == "true") {
             bools.push_back(true);
@@ -374,66 +358,39 @@ std::list<bool> JSONObject::pick_bool_list(std::string& source, size_t& begin)
     return bools;
 }
 
-std::list<long long> JSONObject::pick_num_list(std::string& source, size_t& begin)
+std::list<long double> JSONObject::pick_num_list(std::string& source, size_t& begin)
 {
     begin = source.find_first_of('[', begin);
     if (begin == -1)
         throw new std::invalid_argument("source");
 
-    size_t end = find_block_end_array(source, begin);
+    size_t end = source.find_first_of("]", begin);
     if (end == -1)
-        throw new std::invalid_argument("source");
+        throw new std::invalid_argument("source::no_closing_bracket");
 
-    ++begin;
+    begin++;
+    std::list<long double> nums;
 
-    std::list<long long> nums;
-    while (begin < end)
-    {
-        if ((source[begin] >= '0' && source[begin] <= '9') || source[begin] == '-') {
-            long long num = 1;
-            if (source[begin] == '-') {
-                if (begin < source.size() - 1 && source[begin + 1] >= '0' && source[begin + 1] <= '9') {
-                    num *= -1;
-                    begin++;
-                }
-                else
-                    throw new std::invalid_argument("invalid number at " + std::to_string(begin));
-            }
+    size_t start = source.find_first_not_of(" ,", begin);
+    while (start != -1 && start != end) {
+        size_t num_end = source.find_first_of(" ,]", start);
+        std::string num = source.substr(start, num_end - start);
+        if (!tryParseLDouble(num))
+            throw new std::invalid_argument("non-numeric");
 
-            num *= source[begin] - '0';
-            begin++;
-
-            while (begin < source.size() && source[begin] == '0')
-                begin++;
-
-            while (begin < end && source[begin] >= '0' && source[begin] <= '9') {
-                begin++;
-
-                num *= 10;
-                num += source[begin] - '0';
-            }
-
-            nums.push_back(num);
-        }
-        else if (source[begin] == ' ' || source[begin] == ':' || source[begin] == ';' || source[begin] == ',') {
-            begin++;
-            continue;
-        }
-        else if (source[begin] == ']')
-            return nums;
-        else
-            throw new std::invalid_argument("invalid array at " + std::to_string(begin));
-
-        begin++;
+        nums.push_back(std::stold(num));
+        start = source.find_first_not_of(" ,", num_end);
     }
 
+    begin = end;
     return nums;
 }
 
 bool JSONObject::has_next_key(std::string& source, size_t& pos)
 {
-    if (pos == source.size())
+    if (pos >= source.size() - 1)
         return false;
+
     size_t end = source.find_first_of('}', pos);
     if (end == -1)
         throw new std::invalid_argument("Source file does not contain closing bracket for current object. Latest position = " + std::to_string(pos));
@@ -459,85 +416,48 @@ bool JSONObject::has_next_key(std::string& source, size_t& pos)
     return false;
 }
 
-JSONObject& JSONObject::get_object(std::string key)
+bool JSONObject::tryParseLDouble(std::string num)
 {
-    return key_to_object.at(key);
+    try {
+        long double res = std::stold(num);
+        return true;
+    }
+    catch (std::exception e) {
+        return false;
+    }
 }
 
-std::list<JSONObject>& JSONObject::get_obj_list(std::string key)
-{
-    return key_to_object_list.at(key);
-}
+JSONObject& JSONObject::get_object(std::string key) { return key_to_object.at(key); }
 
-std::list<std::string>& JSONObject::get_val_list(std::string key)
-{
-    return key_to_value_list.at(key);
-}
+std::list<JSONObject>& JSONObject::get_obj_list(std::string key) { return key_to_object_list.at(key); }
 
-std::list<bool>& JSONObject::get_bool_list(std::string key)
-{
-    return key_to_boolean_list.at(key);
-}
+std::list<std::string>& JSONObject::get_val_list(std::string key) { return key_to_value_list.at(key); }
 
-std::list<long long>& JSONObject::get_num_list(std::string key)
-{
-    return key_to_num_list.at(key);
-}
+std::list<bool>& JSONObject::get_bool_list(std::string key) { return key_to_boolean_list.at(key); }
 
-std::string& JSONObject::get_value(std::string key)
-{
-    return key_to_value.at(key);
-}
+std::list<long double>& JSONObject::get_num_list(std::string key) { return key_to_num_list.at(key); }
 
-bool JSONObject::get_bool(std::string key)
-{
-    return key_to_bool.at(key);
-}
+std::string& JSONObject::get_value(std::string key) { return key_to_value.at(key); }
 
-long long JSONObject::get_num(std::string key)
-{
-    return key_to_num.at(key);
-}
+bool JSONObject::get_bool(std::string key) { return key_to_bool.at(key); }
 
-const std::unordered_map<std::string, JSONObject>& JSONObject::get_name_to_object() const
-{
-    return key_to_object;
-}
+long double JSONObject::get_num(std::string key) { return key_to_num.at(key); }
 
-const std::unordered_map<std::string, std::list<JSONObject> >& JSONObject::get_name_to_objects() const
-{
-    return key_to_object_list;
-}
+const std::unordered_map<std::string, JSONObject>& JSONObject::get_name_to_object() const { return key_to_object; }
 
-const std::unordered_map<std::string, std::list<std::string> >& JSONObject::get_name_to_values() const
-{
-    return key_to_value_list;
-}
+const std::unordered_map<std::string, std::list<JSONObject> >& JSONObject::get_name_to_objects() const { return key_to_object_list; }
 
-const std::unordered_map<std::string, std::list<long long>>& JSONObject::get_name_to_nums() const
-{
-    return key_to_num_list;
-}
+const std::unordered_map<std::string, std::list<std::string> >& JSONObject::get_name_to_values() const { return key_to_value_list; }
 
-const std::unordered_map<std::string, std::list<bool>>& JSONObject::get_name_to_bools() const
-{
-    return key_to_boolean_list;
-}
+const std::unordered_map<std::string, std::list<long double>>& JSONObject::get_name_to_nums() const { return key_to_num_list; }
 
-const std::unordered_map<std::string, std::string>& JSONObject::get_name_to_value() const
-{
-    return key_to_value;
-}
+const std::unordered_map<std::string, std::list<bool>>& JSONObject::get_name_to_bools() const { return key_to_boolean_list; }
 
-const std::unordered_map<std::string, long long>& JSONObject::get_name_to_num() const
-{
-    return key_to_num;
-}
+const std::unordered_map<std::string, std::string>& JSONObject::get_name_to_value() const { return key_to_value; }
 
-const std::unordered_map<std::string, bool>& JSONObject::get_name_to_bool() const
-{
-    return key_to_bool;
-}
+const std::unordered_map<std::string, long double>& JSONObject::get_name_to_num() const { return key_to_num; }
+
+const std::unordered_map<std::string, bool>& JSONObject::get_name_to_bool() const { return key_to_bool; }
 
 bool JSONObject::is_in_values(std::string key) const
 {
@@ -603,45 +523,21 @@ bool JSONObject::is_in_num_lists(std::string key) const
     return true;
 }
 
-bool JSONObject::empty_values() const
-{
-    return key_to_value.empty();
-}
+bool JSONObject::empty_values() const { return key_to_value.empty(); }
 
-bool JSONObject::empty_objects() const
-{
-    return key_to_object.empty();
-}
+bool JSONObject::empty_objects() const { return key_to_object.empty(); }
 
-bool JSONObject::empty_nums() const
-{
-    return key_to_num.empty();
-}
+bool JSONObject::empty_nums() const { return key_to_num.empty(); }
 
-bool JSONObject::empty_bools() const
-{
-    return key_to_bool.empty();
-}
+bool JSONObject::empty_bools() const { return key_to_bool.empty(); }
 
-bool JSONObject::empty_val_lists() const
-{
-    return key_to_value_list.empty();
-}
+bool JSONObject::empty_val_lists() const { return key_to_value_list.empty(); }
 
-bool JSONObject::empty_obj_lists() const
-{
-    return key_to_object_list.empty();
-}
+bool JSONObject::empty_obj_lists() const { return key_to_object_list.empty(); }
 
-bool JSONObject::empty_num_lists() const
-{
-    return key_to_num_list.empty();
-}
+bool JSONObject::empty_num_lists() const { return key_to_num_list.empty(); }
 
-bool JSONObject::empty_bool_lists() const
-{
-    return key_to_boolean_list.empty();
-}
+bool JSONObject::empty_bool_lists() const { return key_to_boolean_list.empty(); }
 
 bool JSONObject::empty() const
 {
@@ -651,10 +547,7 @@ bool JSONObject::empty() const
         key_to_object_list.size() == 0;
 }
 
-void JSONObject::set_value(std::string key, std::string value)
-{
-    key_to_value[key] = value;
-}
+void JSONObject::set_value(std::string key, std::string value) { key_to_value[key] = value; }
 
 void JSONObject::set_value(std::string& source)
 {
@@ -665,15 +558,9 @@ void JSONObject::set_value(std::string& source)
     key_to_value[key] = value;
 }
 
-void JSONObject::set_bool(std::string key, bool value)
-{
-    key_to_bool[key] = value;
-}
+void JSONObject::set_bool(std::string key, bool value) { key_to_bool[key] = value; }
 
-void JSONObject::set_num(std::string key, long long value)
-{
-    key_to_num[key] = value;
-}
+void JSONObject::set_num(std::string key, long double value) { key_to_num[key] = value; }
 
 void JSONObject::set_object(std::string key, JSONObject obj)
 {
@@ -732,7 +619,7 @@ void JSONObject::set_bool_list(std::string& source)
     key_to_boolean_list[key] =  pick_bool_list(source, ++start);
 }
 
-void JSONObject::set_num_list(std::string key, std::list<long long> list)
+void JSONObject::set_num_list(std::string key, std::list<long double> list)
 {
     key_to_num_list[key].clear();
     for (auto i : list)
@@ -746,85 +633,37 @@ void JSONObject::set_num_list(std::string& source)
     key_to_num_list[key] = pick_num_list(source, ++start);
 }
 
-void JSONObject::erase_value(std::string key)
-{
-    key_to_value.erase(key);
-}
+void JSONObject::erase_value(std::string key) { key_to_value.erase(key); }
 
-void JSONObject::erase_object(std::string key)
-{
-    key_to_object.erase(key);
-}
+void JSONObject::erase_object(std::string key) { key_to_object.erase(key); }
 
-void JSONObject::erase_num(std::string key)
-{
-    key_to_num.erase(key);
-}
+void JSONObject::erase_num(std::string key) { key_to_num.erase(key); }
 
-void JSONObject::erase_bool(std::string key)
-{
-    key_to_bool.erase(key);
-}
+void JSONObject::erase_bool(std::string key) { key_to_bool.erase(key); }
 
-void JSONObject::erase_val_list(std::string key)
-{
-    key_to_value_list.erase(key);
-}
+void JSONObject::erase_val_list(std::string key) { key_to_value_list.erase(key); }
 
-void JSONObject::erase_obj_list(std::string key)
-{
-    key_to_object_list.erase(key);
-}
+void JSONObject::erase_obj_list(std::string key) { key_to_object_list.erase(key); }
 
-void JSONObject::erase_bool_list(std::string key)
-{
-    key_to_boolean_list.erase(key);
-}
+void JSONObject::erase_bool_list(std::string key) { key_to_boolean_list.erase(key); }
 
-void JSONObject::erase_num_list(std::string key)
-{
-    key_to_num_list.erase(key);
-}
+void JSONObject::erase_num_list(std::string key) { key_to_num_list.erase(key); }
 
-void JSONObject::clear_bools()
-{
-    key_to_bool.clear();
-}
+void JSONObject::clear_bools() { key_to_bool.clear(); }
 
-void JSONObject::clear_nums()
-{
-    key_to_num.clear();
-}
+void JSONObject::clear_nums() { key_to_num.clear(); }
 
-void JSONObject::clear_values()
-{
-    key_to_value.clear();
-}
+void JSONObject::clear_values() { key_to_value.clear(); }
 
-void JSONObject::clear_objects()
-{
-    key_to_object.clear();
-}
+void JSONObject::clear_objects() { key_to_object.clear(); }
 
-void JSONObject::clear_val_lists()
-{
-    key_to_value_list.clear();
-}
+void JSONObject::clear_val_lists() { key_to_value_list.clear(); }
 
-void JSONObject::clear_obj_lists()
-{
-    key_to_object_list.clear();
-}
+void JSONObject::clear_obj_lists() { key_to_object_list.clear(); }
 
-void JSONObject::clear_num_lists()
-{
-    key_to_num_list.clear();
-}
+void JSONObject::clear_num_lists() { key_to_num_list.clear(); }
 
-void JSONObject::clear_bool_lists()
-{
-    key_to_boolean_list.clear();
-}
+void JSONObject::clear_bool_lists() { key_to_boolean_list.clear(); }
 
 void JSONObject::clear()
 {
@@ -895,6 +734,13 @@ void JSONObject::read_and_overwrite(std::string path)
 
 }
 
+void JSONObject::write(std::string file_path)
+{
+    std::ofstream out(file_path);
+    out << to_string(0);
+    out.close();
+}
+
 std::string JSONObject::format(std::string value)
 {
     std::string res = "\"";
@@ -931,7 +777,13 @@ std::string JSONObject::to_string(int tabs)
     }
 
     for (auto& t : key_to_num) {
-        res += spacing + format(t.first) + " : " + std::to_string(t.second) + '\n';
+        // postfix zeros
+        std::string numeric = std::to_string(t.second);
+        numeric.erase(numeric.find_last_not_of('0') + 1, numeric.size());
+        if (numeric.back() == '.')
+            numeric.pop_back();
+
+        res += spacing + format(t.first) + " : " + numeric + '\n';
     }
 
     for (auto& t : key_to_bool) {
@@ -953,7 +805,13 @@ std::string JSONObject::to_string(int tabs)
     for (auto& t : key_to_num_list) {
         res += spacing + format(t.first) + " : [\n";
         for (auto& inner : t.second) {
-            res += spacing + "\t" + std::to_string(inner) + "\n";
+            // postfix zeros
+            std::string numeric = std::to_string(inner);
+            numeric.erase(numeric.find_last_not_of('0') + 1, numeric.size());
+            if (numeric.back() == '.')
+                numeric.pop_back();
+
+            res += spacing + "\t" + numeric + "\n";
         }
 
         res += spacing + "\t]\n";

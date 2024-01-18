@@ -16,6 +16,6 @@ int main()
 	}
 	in.close();
 	JSONObject obj2 = JSONObject::read("UnitTestingResources/list_obj.txt");
-	std::cout << obj2.to_string(0);
+	obj2.write("UnitTestingResources/list_obj2.txt");
 
 }

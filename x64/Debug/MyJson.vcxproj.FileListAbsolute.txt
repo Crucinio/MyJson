@@ -1,2 +1,1 @@
 D:\PG\MyJson\MyJson\x64\Debug\MyJson.exe
-C:\proga\MyJson\MyJson\x64\Debug\MyJson.exe
