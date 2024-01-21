@@ -196,17 +196,17 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
 
 int JSONObject::find_block_end_array(const std::string& source, size_t curpos)
 {
-    int pos = curpos + 1;
+    curpos++;
     bool counts = true;
-    while (pos < source.size()) {
-        if (source[pos] == '\"') {
-            if (source[pos - 1] != '\\')
-                counts = (counts + 1) % 2;
+    while (curpos < source.size()) {
+        if (source[curpos] == '\"') {
+            if (source[curpos - 1] != '\\')
+                counts = !counts;
         }
-        else if (counts && source[pos] == ']')
-            return pos;
+        else if (source[curpos] == ']' && counts)
+            return curpos;
 
-        pos++;
+        curpos++;
     }
 
     return -1;
@@ -230,10 +230,10 @@ std::string JSONObject::pick_val(std::string& source, size_t& begin) // (OK)
                 char next = source[begin + 1];
                 if (next == '\\')
                     pile.push(cur);
-                else if (next == '"')
+                else if (next == '\"')
                     pile.push('\"');
                 else if (next == 'b')
-                    pile.pop();
+                    pile.push('\b');
                 else if (next == 't')
                     pile.push('\t');
 
@@ -291,8 +291,10 @@ std::list<std::string> JSONObject::pick_val_list(std::string& source, size_t& be
         std::string value = pick_val(source, begin);
         values.push_back(value);
         begin++;
+        begin = source.find_first_of('\"', begin);
     }
 
+    begin = end;
     return values;
 }
 

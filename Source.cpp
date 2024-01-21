@@ -7,6 +7,7 @@
 
 int main()
 {
+
 	std::ifstream in("UnitTestingResources/all_effects_data.txt");
 
 	std::string line;
@@ -19,3 +20,5 @@ int main()
 	obj2.write("UnitTestingResources/list_obj2.txt");
 
 }
+
+

@@ -5,8 +5,7 @@
 <h3 style="text-align: center;">About</h3>
 
 - This project is developped to make a versetile tool for reading JSON files and strings that also provides ability to add new key-val pairs via reading from other sources or just adding them through setters.
-- JSONObject currently supports processing numeric, string, boolean and JSONObject values, as well as corresponding arrays and infinetely nested objects.
-- It can also process files and strings that could not be processed by some other parsers due to sensitivity to minor syntax issues like commas, unnecessary symbols between values and keys.
+- JSONObject currently supports processing numeric, string, boolean and JSONObject values, as well as corresponding arrays and infinetely nested objects form txt files.
 ### Install
 Download Json.h, Json.cpp and include the header in the files you need.
 Note that the lib was tested only on MSVC compiler
@@ -23,6 +22,4 @@ The example above obviously contains unnecessary symbols, but still works fine d
 - There are clear, empty and erase(by key) implemented as well.
 
 #### Currently working on
-- Writing in bin and txt files (write, rewrite);
-- Reading from bin files (read, reread));
-- documentation (since 31.12.2023);
+- Reading and writing bin files (write, rewrite);

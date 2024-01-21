@@ -1,3 +1,2 @@
-﻿  Json.cpp
-D:\PG\MyJson\MyJson\Json.cpp(199,25): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+﻿  Source.cpp
   MyJson.vcxproj -> D:\PG\MyJson\MyJson\x64\Debug\MyJson.exe
