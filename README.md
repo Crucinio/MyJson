@@ -18,7 +18,6 @@ Note that the lib was tested only on MSVC compiler
 ![image](https://github.com/Crucinio/MyJson/assets/109169672/6f1eda0f-89ec-4986-bd8a-76e8068c65d3)
 - Using setter with string source as argument:
 ![image](https://github.com/Crucinio/MyJson/assets/109169672/7a5c2e62-fcf4-4096-b0f0-9c11d708282c)
-The example above obviously contains unnecessary symbols, but still works fine due to insensetivity to minor syntax problems.
 - There are clear, empty and erase(by key) implemented as well.
 
 #### Currently working on
