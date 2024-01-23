@@ -7,17 +7,15 @@
 
 int main()
 {
+	std::string source = "{\"value number one\" - \"basic\""
+		"\"value number two\" -  \"spec name = \\\"Hello to you patua\\\"\""
+		"\"value number three\" - \"erase me\\b\\b\\b\\b\\b\\b\\b\\b\\b\""
+		"\"value number four\" - \"I\\tam\\tpretty\\twide\\taren't\\tI\\t?\""
+		"\"value number five\" - \"tricky-peaky \\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\"}";
 
-	std::ifstream in("UnitTestingResources/all_effects_data.txt");
-
-	std::string line;
-	std::string test = "";
-	while (std::getline(in, line)) {
-		test += line;
-	}
-	in.close();
-	JSONObject obj2 = JSONObject::read("UnitTestingResources/list_obj.txt");
-	obj2.write("UnitTestingResources/list_obj2.txt");
+	JSONObject t(source);
+	JSONObject obj2 = JSONObject::read("UnitTestingResources/MissingColon.txt");
+	obj2.write("UnitTestingResources/list_obj3.txt");
 
 }
 

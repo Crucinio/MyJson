@@ -70,33 +70,29 @@ JSONObject::JSONObject(std::string& source) // ???
             } // if the target is an array, determine the type of the array using control symbols \", {, T&F
         }
 
-        // after identifying the target, pick it and insert/rewrite
-        if (current == value) {
+        switch (current) {
+        case value:
             this->key_to_value[k] = pick_val(source, begin);
-        }
-        else if (current == number) {
+            break;
+        case number:
             this->key_to_num[k] = pick_num(source, begin);
+            break;
+        case object:
+            this->key_to_object[k] = JSONObject(source, begin);
+            break;
+        case array:
+            this->key_to_value_list[k] = pick_val_list(source, begin);
+            break;
+        case object_array:
+            this->key_to_object_list[k] = pick_obj_list(source, begin);
+            break;
+        case number_array:
+            this->key_to_num_list[k] = pick_num_list(source, begin);
+            break;
+        case boolean_array:
+            this->key_to_boolean_list[k] = pick_bool_list(source, begin);
+            break;
         }
-        else if (current == object) {
-            JSONObject tmp(source, begin);
-            this->key_to_object[k] = tmp;
-        }
-        else if (current == array) {
-            std::list<std::string> tmp = pick_val_list(source, begin);
-            this->key_to_value_list[k] = tmp;
-        }
-        else if (current == object_array) {
-            std::list<JSONObject> tmp = pick_obj_list(source, begin);
-            this->key_to_object_list[k] = tmp;
-        }
-        else if (current == number_array) {
-            std::list<long double> tmp = pick_num_list(source, begin);
-            this->key_to_num_list[k] = tmp;
-        }
-        else if (current == boolean_array) {
-            std::list<bool> tmp = pick_bool_list(source, begin);
-            this->key_to_boolean_list[k] = tmp;
-        } 
     }
 }
 
@@ -165,31 +161,28 @@ JSONObject::JSONObject(std::string& source, size_t& begin) // ???
         }
 
         // after identifying the target, pick it and insert/rewrite
-        if (current == value) {
+        switch (current) {
+        case value:
             this->key_to_value[k] = pick_val(source, begin);
-        }
-        else if (current == number) {
+            break;
+        case number:
             this->key_to_num[k] = pick_num(source, begin);
-        }
-        else if (current == object) {
-            JSONObject tmp(source, begin);
-            this->key_to_object[k] = tmp;
-        }
-        else if (current == array) {
-            std::list<std::string> tmp = pick_val_list(source, begin);
-            this->key_to_value_list[k] = tmp;
-        }
-        else if (current == object_array) {
-            std::list<JSONObject> tmp = pick_obj_list(source, begin);
-            this->key_to_object_list[k] = tmp;
-        }
-        else if (current == number_array) {
-            std::list<long double> tmp = pick_num_list(source, begin);
-            this->key_to_num_list[k] = tmp;
-        }
-        else if (current == boolean_array) {
-            std::list<bool> tmp = pick_bool_list(source, begin);
-            this->key_to_boolean_list[k] = tmp;
+            break;
+        case object:
+            this->key_to_object[k] = JSONObject(source, begin);
+            break;
+        case array:
+            this->key_to_value_list[k] = pick_val_list(source, begin);
+            break;
+        case object_array:
+            this->key_to_object_list[k] = pick_obj_list(source, begin);
+            break;
+        case number_array:
+            this->key_to_num_list[k] = pick_num_list(source, begin);
+            break;
+        case boolean_array:
+            this->key_to_boolean_list[k] = pick_bool_list(source, begin);
+            break;
         }
     }
 }
@@ -222,20 +215,30 @@ std::string JSONObject::pick_val(std::string& source, size_t& begin) // (OK)
         throw new std::invalid_argument("source");
 
     begin++;
-    std::stack<char> pile;
+    std::string word;
     while (begin < source.size()) {
         char cur = source[begin];
         if (cur == '\\') {
             if (begin + 1 < source.size()) {
                 char next = source[begin + 1];
-                if (next == '\\')
-                    pile.push(cur);
-                else if (next == '\"')
-                    pile.push('\"');
-                else if (next == 'b')
-                    pile.push('\b');
-                else if (next == 't')
-                    pile.push('\t');
+                switch (next) {
+                case '\\' :word.push_back(cur);
+                    break;
+                case '\"':word.push_back('\"');
+                    break;
+                case 'b':word.push_back('\b');
+                    break;
+                case 't':word.push_back('\t');
+                    break;
+                case 'f':word.push_back('\f');
+                    break;
+                case 'n':word.push_back('\n');
+                    break;
+                case 'r':word.push_back('\r');
+                    break;
+                default: word.push_back(cur);
+                    begin--;
+                }
 
                 begin += 2;
             }
@@ -246,7 +249,7 @@ std::string JSONObject::pick_val(std::string& source, size_t& begin) // (OK)
         else if (cur == '\"')
             break;
         else {
-            pile.push(cur);
+            word.push_back(cur);
             begin++;
         }
     }
@@ -254,13 +257,31 @@ std::string JSONObject::pick_val(std::string& source, size_t& begin) // (OK)
     if (begin >= source.size())
         throw new std::invalid_argument("source");
 
-    std::string res(pile.size(), '0');
-    while (pile.size() > 0) {
-        res[pile.size() - 1] = pile.top();
-        pile.pop();
+    return word;
+}
+
+std::list<std::string> JSONObject::pick_val_list(std::string& source, size_t& begin)
+{
+    begin = source.find_first_of('[', begin);
+    if (begin == -1)
+        throw new std::invalid_argument("source");
+
+    size_t end = find_block_end_array(source, begin);
+    if (end == -1)
+        throw new std::invalid_argument("source");
+
+    std::list<std::string> values;
+    begin = source.find_first_of('\"', begin);
+    while (begin < end && begin != -1)
+    {
+        std::string value = pick_val(source, begin);
+        values.push_back(value);
+        begin++;
+        begin = source.find_first_of('\"', begin);
     }
 
-    return res;
+    begin = end;
+    return values;
 }
 
 long double JSONObject::pick_num(std::string& source, size_t& begin)
@@ -275,27 +296,37 @@ long double JSONObject::pick_num(std::string& source, size_t& begin)
     return std::stold(num);
 }
 
-std::list<std::string> JSONObject::pick_val_list(std::string& source, size_t& begin)
+std::list<long double> JSONObject::pick_num_list(std::string& source, size_t& begin)
 {
     begin = source.find_first_of('[', begin);
     if (begin == -1)
         throw new std::invalid_argument("source");
 
-    size_t end = find_block_end_array(source, begin);
-    if (end == -1)
-        throw new std::invalid_argument("source");
+    size_t check = source.find_first_of('}', begin);
 
-    std::list<std::string> values;
-    while (begin < end && has_next_key(source, begin))
-    {
-        std::string value = pick_val(source, begin);
-        values.push_back(value);
-        begin++;
-        begin = source.find_first_of('\"', begin);
+    size_t end = source.find_first_of("]", begin);
+    if (end == -1)
+        throw new std::invalid_argument("source::no_closing_bracket");
+
+    if (check < end)
+        throw new std::invalid_argument("source has invalid brackets");
+
+    begin++;
+    std::list<long double> nums;
+
+    size_t start = source.find_first_not_of(" ,", begin);
+    while (start != -1 && start != end) {
+        size_t num_end = source.find_first_of(" ,]", start);
+        std::string num = source.substr(start, num_end - start);
+        if (!tryParseLDouble(num))
+            throw new std::invalid_argument("non-numeric");
+
+        nums.push_back(std::stold(num));
+        start = source.find_first_not_of(" ,", num_end);
     }
 
     begin = end;
-    return values;
+    return nums;
 }
 
 std::list<JSONObject> JSONObject::pick_obj_list(std::string& source, size_t& begin)
@@ -360,38 +391,10 @@ std::list<bool> JSONObject::pick_bool_list(std::string& source, size_t& begin)
     return bools;
 }
 
-std::list<long double> JSONObject::pick_num_list(std::string& source, size_t& begin)
-{
-    begin = source.find_first_of('[', begin);
-    if (begin == -1)
-        throw new std::invalid_argument("source");
-
-    size_t end = source.find_first_of("]", begin);
-    if (end == -1)
-        throw new std::invalid_argument("source::no_closing_bracket");
-
-    begin++;
-    std::list<long double> nums;
-
-    size_t start = source.find_first_not_of(" ,", begin);
-    while (start != -1 && start != end) {
-        size_t num_end = source.find_first_of(" ,]", start);
-        std::string num = source.substr(start, num_end - start);
-        if (!tryParseLDouble(num))
-            throw new std::invalid_argument("non-numeric");
-
-        nums.push_back(std::stold(num));
-        start = source.find_first_not_of(" ,", num_end);
-    }
-
-    begin = end;
-    return nums;
-}
-
 bool JSONObject::has_next_key(std::string& source, size_t& pos)
 {
-    if (pos >= source.size() - 1)
-        return false;
+    if (pos > source.size() - 1)
+        throw new std::invalid_argument("Source file does not contain closing bracket for current object. Latest position = " + std::to_string(pos));
 
     size_t end = source.find_first_of('}', pos);
     if (end == -1)
@@ -403,19 +406,8 @@ bool JSONObject::has_next_key(std::string& source, size_t& pos)
         return false;
     }
 
-    begin++;
-    while (begin < source.size()) {
-        if (source[begin] == '\"' && source[begin - 1] != '\\') {
-            if (source.find_first_of('}', begin) == -1)
-                throw new std::invalid_argument("Source file does not contain closing bracket for current object. Latest position = " + std::to_string(pos));
-
-            return true;
-        }
-
-        begin++;
-    }
-
-    return false;
+    pos = begin;
+    return true;
 }
 
 bool JSONObject::tryParseLDouble(std::string num)
