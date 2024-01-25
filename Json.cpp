@@ -720,11 +720,23 @@ void JSONObject::read_and_overwrite(std::string path)
     for (auto l : tmp.get_name_to_object())
         key_to_object[l.first] = l.second;
 
+    for (auto l : tmp.get_name_to_bool())
+        key_to_bool[l.first] = l.second;
+
+    for (auto l : tmp.get_name_to_num())
+        key_to_num[l.first] = l.second;
+
     for (auto l : tmp.get_name_to_values())
         key_to_value_list[l.first] = l.second;
 
     for (auto l : tmp.get_name_to_objects())
         key_to_object_list[l.first] = l.second;
+
+    for (auto l : tmp.get_name_to_bools())
+        key_to_boolean_list[l.first] = l.second;
+
+    for (auto l : tmp.get_name_to_nums())
+        key_to_num_list[l.first] = l.second;
 } // read object from the file and write as new fields or overwrite data in current obj
 
 void JSONObject::write(std::string file_path)
