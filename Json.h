@@ -197,7 +197,7 @@ public:
 
     void write(std::string file_path);
 
-    //void write_as_bin(std::string file_name, std::string dir);
+    //void write_as_binary(std::string file_name, std::string dir);
 
     // FORMATTING
     std::string format(std::string value);

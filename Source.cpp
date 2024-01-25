@@ -14,7 +14,7 @@ int main()
 		"\"value number five\" - \"tricky-peaky \\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\"}";
 
 	JSONObject t(source);
-	JSONObject obj2 = JSONObject::read("UnitTestingResources/MissingColon.txt");
+	JSONObject obj2 = JSONObject::read("UnitTestingResources/to_string.txt");
 	obj2.write("UnitTestingResources/list_obj3.txt");
 
 }

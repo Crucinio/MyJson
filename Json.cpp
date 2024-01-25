@@ -203,7 +203,7 @@ int JSONObject::find_block_end_array(const std::string& source, size_t curpos)
     }
 
     return -1;
-}
+} // a method to find the end of list of strings
 
 std::string JSONObject::pick_val(std::string& source, size_t& begin) // (OK)
 {
@@ -258,7 +258,7 @@ std::string JSONObject::pick_val(std::string& source, size_t& begin) // (OK)
         throw new std::invalid_argument("source");
 
     return word;
-}
+} // reads string value
 
 std::list<std::string> JSONObject::pick_val_list(std::string& source, size_t& begin)
 {
@@ -282,7 +282,7 @@ std::list<std::string> JSONObject::pick_val_list(std::string& source, size_t& be
 
     begin = end;
     return values;
-}
+} // reads list of values
 
 long double JSONObject::pick_num(std::string& source, size_t& begin)
 {
@@ -294,7 +294,7 @@ long double JSONObject::pick_num(std::string& source, size_t& begin)
 
     begin = end - 1;
     return std::stold(num);
-}
+} // reads single number
 
 std::list<long double> JSONObject::pick_num_list(std::string& source, size_t& begin)
 {
@@ -327,7 +327,7 @@ std::list<long double> JSONObject::pick_num_list(std::string& source, size_t& be
 
     begin = end;
     return nums;
-}
+} // reads list of numeric data
 
 std::list<JSONObject> JSONObject::pick_obj_list(std::string& source, size_t& begin)
 {
@@ -361,7 +361,7 @@ std::list<JSONObject> JSONObject::pick_obj_list(std::string& source, size_t& beg
         }
     }
     return tmp;
-}
+} // reads list of objects
 
 std::list<bool> JSONObject::pick_bool_list(std::string& source, size_t& begin)
 {
@@ -389,7 +389,7 @@ std::list<bool> JSONObject::pick_bool_list(std::string& source, size_t& begin)
     }
 
     return bools;
-}
+} // reads list of bools
 
 bool JSONObject::has_next_key(std::string& source, size_t& pos)
 {
@@ -408,7 +408,7 @@ bool JSONObject::has_next_key(std::string& source, size_t& pos)
 
     pos = begin;
     return true;
-}
+} // return true if there exist another "key" before closing bracket
 
 bool JSONObject::tryParseLDouble(std::string num)
 {
@@ -683,7 +683,7 @@ JSONObject JSONObject::read(std::string path)
         source += line;
 
     return JSONObject(source);
-}
+} // read object
 
 void JSONObject::read_as_field(std::string path)
 {
@@ -700,7 +700,7 @@ void JSONObject::read_as_field(std::string path)
     std::string key = pick_val(source, start);
     JSONObject tmp(source, ++start);
     key_to_object[key] = tmp;
-}
+} // reads key and object pair and write it as a field of current object
 
 void JSONObject::read_and_overwrite(std::string path)
 {
@@ -725,119 +725,245 @@ void JSONObject::read_and_overwrite(std::string path)
 
     for (auto l : tmp.get_name_to_objects())
         key_to_object_list[l.first] = l.second;
-
-}
+} // read object from the file and write as new fields or overwrite data in current obj
 
 void JSONObject::write(std::string file_path)
 {
     std::ofstream out(file_path);
     out << to_string(0);
     out.close();
-}
+} // write the object as readable by any JSON parser
 
 std::string JSONObject::format(std::string value)
 {
     std::string res = "\"";
     for (int i = 0; i < value.size(); i++) {
-        if (value[i] == '\"')
-            res += "\\\"";
-        else if (value[i] == '\'')
-            res += "\\\'";
-        else if (value[i] == '\t')
-            res += "\\t";
-        else if (value[i] == '\v')
-            res += "\\v";
-        else if (value[i] == '\b')
-            res += "\\b";
-        else if (value[i] == '\n')
-            res += "\\n";
-        else if (value[i] == '\\')
-            res += "\\\\";
-        else
-            res += value[i];
+        char val = value[i];
+        switch (val) {
+        case '\\':res += "\\\\";
+            break;
+        case '\"':res += "\\\"";;
+            break;
+        case '\b':res += "\\b";;
+            break;
+        case '\t':res += "\\t";
+            break;
+        case '\f':res += "\\f";;
+            break;
+        case '\n':res += "\\n";
+            break;
+        case '\r':res += "\\r";
+            break;
+        default: res.push_back(val);
+        }
     }
 
     res += "\"";
     return res;
-}
+} // formats string value to readable by parser value
 
 std::string JSONObject::to_string(int tabs)
 {
     std::string spacing(tabs, '\t');
     std::string res = "{\n";
-
+    
+    int c = 0;
     for (auto& t : key_to_value) {
-        res += spacing + format(t.first) + " : " + format(t.second) + '\n';
+        c++;
+        res += spacing + format(t.first) + " : " + format(t.second);
+        if (c < key_to_value.size())
+            res += ",\n";
     }
 
+    if (!(key_to_num.empty() && key_to_bool.empty() && key_to_value_list.empty() && key_to_num_list.empty() && key_to_boolean_list.empty() && key_to_object.empty() && key_to_object_list.empty())) {
+        if (!key_to_value.empty())
+            res += ",\n";
+    }
+    else {
+        res += '\n';
+        res += spacing + "}";
+        return res;
+    }
+
+    c = 0;
     for (auto& t : key_to_num) {
+        c++;
         // postfix zeros
         std::string numeric = std::to_string(t.second);
         numeric.erase(numeric.find_last_not_of('0') + 1, numeric.size());
         if (numeric.back() == '.')
             numeric.pop_back();
 
-        res += spacing + format(t.first) + " : " + numeric + '\n';
+        res += spacing + format(t.first) + " : " + numeric;
+        if (c < key_to_num.size())
+            res += ",\n";
+
     }
 
+    if (!(key_to_bool.empty() && key_to_value_list.empty() && key_to_num_list.empty() && key_to_boolean_list.empty() && key_to_object.empty() && key_to_object_list.empty())) {
+        if (!key_to_num.empty())
+            res += ",\n";
+    }
+    else {
+        res += '\n';
+        res += spacing + "}";
+        return res;
+    }
+
+    c = 0;
     for (auto& t : key_to_bool) {
+        c++;
         if (t.second)
-            res += spacing + format(t.first) + " : true\n";
+            res += spacing + format(t.first) + " : true";
         else
-            res += spacing + format(t.first) + " : false\n";
+            res += spacing + format(t.first) + " : false";
+
+        if (c < key_to_bool.size())
+            res += ",\n";
     }
 
+    if (!(key_to_value_list.empty() && key_to_num_list.empty() && key_to_boolean_list.empty() && key_to_object.empty() && key_to_object_list.empty())) {
+        if (!key_to_bool.empty())
+            res += ",\n";
+    }
+    else {
+        res += '\n';
+        res += spacing + "}";
+        return res;
+    }
+
+    
+    c = 0;
     for (auto& t : key_to_value_list) {
+        c++;
         res += spacing + format(t.first) + " : [\n";
+        int c_in = 0;
         for (auto& inner : t.second) {
-            res += spacing + "\t" + format(inner) + "\n";
+            c_in++;
+            res += spacing + "\t" + format(inner);
+            if (c_in < t.second.size())
+                res += ",\n";
         }
 
-        res += spacing + "\t]\n";
+        res += "]";
+        if (c < key_to_value_list.size())
+            res += ",\n";
     }
 
+    if (!(key_to_num_list.empty() && key_to_boolean_list.empty() && key_to_object.empty() && key_to_object_list.empty())) {
+        if (!key_to_value_list.empty())
+            res += ",\n";
+    }
+    else {
+        res += '\n';
+        res += spacing + "}";
+        return res;
+    }
+
+    
+    c = 0;
     for (auto& t : key_to_num_list) {
+        c++;
         res += spacing + format(t.first) + " : [\n";
+        int c_in = 0;
         for (auto& inner : t.second) {
+            c_in++;
             // postfix zeros
             std::string numeric = std::to_string(inner);
             numeric.erase(numeric.find_last_not_of('0') + 1, numeric.size());
             if (numeric.back() == '.')
                 numeric.pop_back();
 
-            res += spacing + "\t" + numeric + "\n";
+            res += spacing + "\t" + numeric;
+            if (c_in < t.second.size())
+                res += ",\n";
         }
 
-        res += spacing + "\t]\n";
+        res += "]";
+        if (c < key_to_num_list.size())
+            res += ",\n";
     }
 
+    if (!(key_to_boolean_list.empty() && key_to_object.empty() && key_to_object_list.empty())) {
+        if (!key_to_num_list.empty())
+            res += ",\n";
+    }
+    else {
+        res += '\n';
+        res += spacing + "}";
+        return res;
+    }
+
+    c = 0;
     for (auto& t : key_to_boolean_list) {
+        c++;
         res += spacing + format(t.first) + " : [\n";
+        int c_in = 0;
         for (auto& inner : t.second) {
+            c_in++;
             if (inner)
-                res += spacing + "\ttrue\n";
+                res += spacing + "\ttrue";
             else
-                res += spacing + "\tfalse\n";
+                res += spacing + "\tfalse";
+
+            if (c_in < t.second.size())
+                res += ",\n";
         }
 
-        res += spacing + "\t]\n";
+        res += "]";
+        if (c < key_to_boolean_list.size())
+            res += ",\n";
     }
 
+    if (!(key_to_object.empty() && key_to_object_list.empty())) {
+        if (!key_to_boolean_list.empty())
+            res += ",\n";
+    }
+    else {
+        res += '\n';
+        res += spacing + "}";
+        return res;
+    }
+
+    c = 0;
     for (auto& obj : key_to_object) {
-        res += spacing + format(obj.first) + " : " + obj.second.to_string(tabs + 1) + "\n";
+        c++;
+        res += spacing + format(obj.first) + " : " + obj.second.to_string(tabs + 1);
+        if (c < key_to_object.size())
+            res += ",\n";
     }
 
+    if (!(key_to_object_list.empty())) {
+        if (!key_to_object.empty())
+            res += ",\n";
+    }
+    else {
+        res += '\n';
+        res += spacing + "}";
+        return res;
+    }
+
+    c = 0;
     for (auto& t : key_to_object_list) {
+        c++;
         res += spacing + format(t.first) + " : [\n";
+        int c_in = 0;
         for (auto& obj : t.second) {
-            res += spacing + '\t' + obj.to_string(tabs + 1) + "\n";
+            c_in++;
+            res += spacing + '\t' + obj.to_string(tabs + 1);
+            if (c_in <t.second.size())
+                res += ",\n";
         }
 
-        res += "\t]\n";
+        res += "]";
+        if (c < key_to_object_list.size())
+            res += ",\n";
+        else
+            res += '\n';
     }
 
     res += spacing + "}";
     return res;
-}
+} // returns the string representation of the object, readable by any JSON reader
 
 
