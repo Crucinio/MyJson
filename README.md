@@ -1,15 +1,15 @@
 ![MyJson (3)](https://github.com/Crucinio/MyJson/assets/109169672/f3740dd1-cb71-44b4-bddc-78b0caab9bac)
 
-<p style="text-align: center;"> An easy-to-understand tool for working with JSON data in C++
+<p style="text-align: center;"> A godforsaken tool for working with JSON data in C++ (Think twice...)
 
 <h3 style="text-align: center;">About</h3>
 
-- MyJSON is being developed to present a simplified C++ JSON reader/writer with an easy-to-understand API.
-- Currently, it can read string, numeric and boolean types, as well as corresponding arrays and nested objects.
-- Reads 5MB of JSON data in about 6 seconds and 512KB in about 330 milliseconds.
+- Was developed due to the stubborness of myself to create a self-made JSON-reader for other project and then became a dummy for creating a readme and unit testing
+- Surprisingly, it can actually read string, numeric and boolean types, as well as corresponding arrays and nested objects.
+- Reads 5MB of JSON data in about 6 seconds and 512KB in about 330 milliseconds...
 ### Install
 Download Json.h, Json.cpp and include the header in the files you need.
-Note that JSONObject was tested only on MSVC compiler!
+Note that JSONObject was tested only on MSVC compiler
 ### Usage
 - Initialising object in different ways:
 ![image](https://github.com/Crucinio/MyJson/assets/109169672/74e63b6e-0f59-485e-a810-436c1b602611)
@@ -30,5 +30,4 @@ Note that JSONObject was tested only on MSVC compiler!
 ![image](https://github.com/Crucinio/MyJson/assets/109169672/e3a46ab8-a405-472a-8fbe-f8fda5e4ccb1)
 
 #### Future features:
-- Reading and writing bin files (write, rewrite);
-- Using concurrency to read nested jsonobjects and jsonbject arrays faster (+ configuration file maybe?)
+- Concurrency?
